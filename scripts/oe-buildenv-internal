@@ -62,9 +62,9 @@ if [ "x$BDIR" = "x" ]; then
         # Remove any possible trailing slashes. This is used to work around
         # buggy readlink in Ubuntu 10.04 that doesn't ignore trailing slashes
         # and hence "readlink -f new_dir_to_be_created/" returns empty.
-        BDIR=`echo $BDIR | sed -re 's|/+$||'`
+        BDIR=`echo $BDIR | gsed -re 's|/+$||'`
 
-        BDIR=`readlink -f "$BDIR"`
+        BDIR=`greadlink -f "$BDIR"`
         if [ -z "$BDIR" ]; then
             PARENTDIR=`dirname "$1"`
             echo >&2 "Error: the directory $PARENTDIR does not exist?"
@@ -86,8 +86,8 @@ if [ "x$BITBAKEDIR" = "x" ]; then
     BITBAKEDIR="$OEROOT/bitbake$BBEXTRA/"
 fi
 
-BITBAKEDIR=`readlink -f "$BITBAKEDIR"`
-BUILDDIR=`readlink -f "$BUILDDIR"`
+BITBAKEDIR=`greadlink -f "$BITBAKEDIR"`
+BUILDDIR=`greadlink -f "$BUILDDIR"`
 
 if ! (test -d "$BITBAKEDIR"); then
     echo >&2 "Error: The bitbake directory ($BITBAKEDIR) does not exist!  Please ensure a copy of bitbake exists at this location"
