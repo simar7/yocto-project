@@ -32,6 +32,10 @@ class QemuRunner:
         self.boottime = boottime
         self.runqemutime = runqemutime
 
+        self.create_socket()
+
+    def create_socket(self):
+
         self.bootlog = ''
         self.qemusock = None
 
@@ -53,7 +57,6 @@ class QemuRunner:
                 f.write("%s" % msg)
 
     def launch(self, qemuparams = None):
-
 
         if self.display:
             os.environ["DISPLAY"] = self.display
@@ -84,12 +87,11 @@ class QemuRunner:
 
         if self.is_alive():
             bb.note("qemu started - qemu procces pid is %s" % self.qemupid)
-            pscmd = 'ps -p %s -fww | grep -o "192\.168\.7\.[0-9]*::" | awk -F":" \'{print $1}\'' % self.qemupid
-            self.ip = subprocess.Popen(pscmd,shell=True,stdout=subprocess.PIPE).communicate()[0].strip()
+            cmdline = open('/proc/%s/cmdline' % self.qemupid).read()
+            self.ip, _, self.host_ip = cmdline.split('ip=')[1].split(' ')[0].split(':')[0:3]
             if not re.search("^((?:[0-9]{1,3}\.){3}[0-9]{1,3})$", self.ip):
                 bb.note("Couldn't get ip from qemu process arguments, I got '%s'" % self.ip)
-                bb.note("Here is the ps output:\n%s" % \
-                        subprocess.Popen("ps -p %s -fww" % self.qemupid,shell=True,stdout=subprocess.PIPE).communicate()[0])
+                bb.note("Here is the ps output:\n%s" % cmdline)
                 self.kill()
                 return False
             bb.note("IP found: %s" % self.ip)
@@ -122,7 +124,6 @@ class QemuRunner:
                             sock.close()
                             stopread = True
 
-
             if not reachedlogin:
                 bb.note("Target didn't reached login boot in %d seconds" % self.boottime)
                 lines = "\n".join(self.bootlog.splitlines()[-5:])
@@ -139,23 +140,32 @@ class QemuRunner:
 
         return self.is_alive()
 
-
     def kill(self):
+
+        if self.runqemu:
+            bb.note("Sending SIGTERM to runqemu")
+            os.kill(-self.runqemu.pid,signal.SIGTERM)
+            endtime = time.time() + self.runqemutime
+            while self.runqemu.poll() is None and time.time() < endtime:
+                time.sleep(1)
+            if self.runqemu.poll() is None:
+                bb.note("Sending SIGKILL to runqemu")
+                os.kill(-self.runqemu.pid,signal.SIGKILL)
+            self.runqemu = None
         if self.server_socket:
             self.server_socket.close()
             self.server_socket = None
-        if self.runqemu.pid:
-            os.kill(-self.runqemu.pid,signal.SIGTERM)
-            os.kill(-self.runqemu.pid,signal.SIGKILL)
-            self.runqemu.pid = None
         self.qemupid = None
         self.ip = None
 
     def restart(self, qemuparams = None):
-        if self.is_alive():
+        bb.note("Restarting qemu process")
+        if self.runqemu.poll() is None:
             self.kill()
-        bb.note("Qemu Restart required...")
-        return self.launch(qemuparams)
+        self.create_socket()
+        if self.launch(qemuparams):
+            return True
+        return False
 
     def is_alive(self):
         qemu_child = self.find_child(str(self.runqemu.pid))
@@ -207,4 +217,3 @@ class QemuRunner:
             basecmd = os.path.basename(basecmd)
             if "qemu-system" in basecmd and "-serial tcp" in commands[p]:
                 return [int(p),commands[p]]
-

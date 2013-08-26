@@ -90,8 +90,7 @@ class Command:
                 (command, options) = self.currentAsyncCommand
                 commandmethod = getattr(CommandsAsync, command)
                 needcache = getattr( commandmethod, "needcache" )
-                if (needcache and self.cooker.state in
-                    (bb.cooker.state.initial, bb.cooker.state.parsing)):
+                if needcache and self.cooker.state != bb.cooker.state.running:
                     self.cooker.updateCache()
                     return True
                 else:
@@ -239,6 +238,13 @@ class CommandsSync:
         """
         name = params[0]
         command.cooker.createConfigFile(name)
+
+    def setEventMask(self, command, params):
+        handlerNum = params[0]
+        llevel = params[1]
+        debug_domains = params[2]
+        mask = params[3]
+        return bb.event.set_UIHmask(handlerNum, llevel, debug_domains, mask)
 
 class CommandsAsync:
     """

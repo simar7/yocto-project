@@ -3,6 +3,11 @@ require e2fsprogs.inc
 
 SRC_URI += "file://acinclude.m4 \
             file://remove.ldconfig.call.patch \
+            file://debugfs-too-short.patch \
+            file://debugfs-sparse-copy.patch \
+            file://fix-icache.patch \
+            file://debugfs-extent-header.patch \
+            file://populate-extfs.sh \
 "
 
 SRC_URI[md5sum] = "8ef664b6eb698aa6b733df59b17b9ed4"
@@ -39,6 +44,7 @@ do_install_append () {
 		mv ${D}${base_libdir}/e2initrd_helper ${D}${libdir}
 		mv ${D}${base_libdir}/pkgconfig ${D}${libdir}
 	fi
+	install -m 0755 ${WORKDIR}/populate-extfs.sh ${D}${bindir}
 }
 
 RDEPENDS_e2fsprogs = "e2fsprogs-badblocks"

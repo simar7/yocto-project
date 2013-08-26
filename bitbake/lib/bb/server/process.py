@@ -37,8 +37,9 @@ from . import BitBakeBaseServer, BitBakeBaseServerConnection, BaseImplServer
 logger = logging.getLogger('BitBake')
 
 class ServerCommunicator():
-    def __init__(self, connection):
+    def __init__(self, connection, event_handle):
         self.connection = connection
+        self.event_handle = event_handle
 
     def runCommand(self, command):
         # @todo try/except
@@ -54,6 +55,8 @@ class ServerCommunicator():
             except KeyboardInterrupt:
                 pass
 
+    def getEventHandle(self):
+        return self.event_handle.value
 
 class EventAdapter():
     """
@@ -84,11 +87,12 @@ class ProcessServer(Process, BaseImplServer):
 
         self.keep_running = Event()
         self.keep_running.set()
+        self.event_handle = multiprocessing.Value("i")
 
     def run(self):
         for event in bb.event.ui_queue:
             self.event_queue.put(event)
-        self.event_handle = bb.event.register_UIHhandler(self)
+        self.event_handle.value = bb.event.register_UIHhandler(self)
         bb.cooker.server_main(self.cooker, self.main)
 
     def main(self):
@@ -105,8 +109,8 @@ class ProcessServer(Process, BaseImplServer):
             except Exception:
                 logger.exception('Running command %s', command)
 
-        self.event_queue.cancel_join_thread()
-        bb.event.unregister_UIHhandler(self.event_handle)
+        self.event_queue.close()
+        bb.event.unregister_UIHhandler(self.event_handle.value)
         self.command_channel.close()
         self.cooker.stop()
         self.idle_commands(.1)
@@ -147,30 +151,28 @@ class BitBakeProcessServerConnection(BitBakeBaseServerConnection):
         self.procserver = serverImpl
         self.ui_channel = ui_channel
         self.event_queue = event_queue
-        self.connection = ServerCommunicator(self.ui_channel)
+        self.connection = ServerCommunicator(self.ui_channel, self.procserver.event_handle)
         self.events = self.event_queue
 
-    def terminate(self, force = False):
+    def terminate(self):
+        def flushevents():
+            while True:
+                try:
+                    event = self.event_queue.get(block=False)
+                except (Empty, IOError):
+                    break
+                if isinstance(event, logging.LogRecord):
+                    logger.handle(event)
+
         signal.signal(signal.SIGINT, signal.SIG_IGN)
         self.procserver.stop()
-        if force:
-            self.procserver.join(0.5)
-            if self.procserver.is_alive():
-                self.procserver.terminate()
-                self.procserver.join()
-        else:
-            self.procserver.join()
-        while True:
-            try:
-                event = self.event_queue.get(block=False)
-            except (Empty, IOError):
-                break
-            if isinstance(event, logging.LogRecord):
-                logger.handle(event)
+
+        while self.procserver.is_alive():
+            flushevents()
+            self.procserver.join(0.1)
+
         self.ui_channel.close()
         self.event_queue.close()
-        if force:
-            sys.exit(1)
 
 # Wrap Queue to provide API which isn't server implementation specific
 class ProcessEventQueue(multiprocessing.queues.Queue):
@@ -203,5 +205,5 @@ class BitBakeServer(BitBakeBaseServer):
 
     def establishConnection(self):
         self.connection = BitBakeProcessServerConnection(self.serverImpl, self.ui_channel, self.event_queue)
-        signal.signal(signal.SIGTERM, lambda i, s: self.connection.terminate(force=True))
+        signal.signal(signal.SIGTERM, lambda i, s: self.connection.terminate())
         return self.connection
