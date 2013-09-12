@@ -3,13 +3,13 @@ require recipes-kernel/linux/linux-yocto.inc
 KBRANCH = "standard/preempt-rt/base"
 KBRANCH_qemuppc = "standard/preempt-rt/qemuppc"
 
-SRCREV_machine ?= "77c5842818867366c3d08ca1dec19dc43aee0e91"
-SRCREV_machine_qemuppc ?= "7be83bc1124d2a2c75f99df94baaf718659722ea"
-SRCREV_meta ?= "1b9b113837f353fd94148beb6bd00a3b7b35d01d"
+SRCREV_machine ?= "4de6b6b24c44ef644b46405a85c550128d4a779a"
+SRCREV_machine_qemuppc ?= "24a1786e5ed0d479638af5738375e396bf4c922c"
+SRCREV_meta ?= "b683dce390b1bbe434b15df6308ed03e5fd3a4ac"
 
-SRC_URI = "git://git.yoctoproject.org/linux-yocto-3.10.git;protocol=git;bareclone=1;branch=${KBRANCH},meta;name=machine,meta"
+SRC_URI = "git://git.yoctoproject.org/linux-yocto-3.10.git;bareclone=1;branch=${KBRANCH},meta;name=machine,meta"
 
-LINUX_VERSION ?= "3.10.9"
+LINUX_VERSION ?= "3.10.11"
 
 PV = "${LINUX_VERSION}+git${SRCPV}"
 
@@ -17,10 +17,7 @@ KMETA = "meta"
 
 LINUX_KERNEL_TYPE = "preempt-rt"
 
-# Omit broken machines from COMPATIBLE_MACHINE
-#   qemuppc hangs at boot
-#   qemumips panics at boot
-COMPATIBLE_MACHINE = "(qemux86|qemux86-64|qemuarm)"
+COMPATIBLE_MACHINE = "(qemux86|qemux86-64|qemuarm|qemuppc|qemumips)"
 
 # Functionality flags
 KERNEL_EXTRA_FEATURES ?= "features/netfilter/netfilter.scc features/taskstats/taskstats.scc"

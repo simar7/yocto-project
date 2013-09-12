@@ -387,6 +387,10 @@ class ImageConfigurationPage (HobPage):
                 selected_image = self.__dummy_image__
                 self.update_image_combo(self.builder.recipe_model, None)
             dialog.destroy()
+        else:
+            if self.custom_image_selected:
+                self.custom_image_selected = None
+                self.update_image_combo(self.builder.recipe_model, selected_image)
 
         if not selected_image or (selected_image == self.__dummy_image__):
             self.builder.window_sensitive(True)
@@ -496,16 +500,15 @@ class ImageConfigurationPage (HobPage):
                 cnt = cnt + 1
         self.image_combo.append_text(self.builder.recipe_model.__custom_image__)
 
-        if self.custom_image_selected:
-            self.image_combo.append_text("--Separator--")
-            cnt = cnt + 1
-            self.image_combo.append_text(self.custom_image_selected)
-            if self.custom_image_selected == selected_image:
-                active = cnt
-            cnt = cnt + 1
-
         if selected_image == self.builder.recipe_model.__custom_image__:
             active = cnt
+
+        if self.custom_image_selected:
+            self.image_combo.append_text("--Separator--")
+            self.image_combo.append_text(self.custom_image_selected)
+            cnt = cnt + 2
+            if self.custom_image_selected == selected_image:
+                active = cnt
 
         self.image_combo.set_active(active)
 

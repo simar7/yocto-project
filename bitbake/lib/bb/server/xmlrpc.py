@@ -78,7 +78,7 @@ class BBTransport(xmlrpclib.Transport):
             h.putheader("Bitbake-token", self.connection_token)
         xmlrpclib.Transport.send_content(self, h, body)
 
-def _create_server(host, port, timeout = 5):
+def _create_server(host, port, timeout = 60):
     t = BBTransport(timeout)
     s = xmlrpclib.Server("http://%s:%d/" % (host, port), transport=t, allow_none=True)
     return s, t
@@ -133,6 +133,8 @@ class BitBakeServerCommands():
         if self.has_client:
             self.server.set_connection_token(None)
             self.has_client = False
+            if self.server.single_use:
+                self.server.quit = True
 
 # This request handler checks if the request has a "Bitbake-token" header
 # field (this comes from the client side) and compares it with its internal
@@ -239,6 +241,9 @@ class XMLRPCServer(SimpleXMLRPCServer, BaseImplServer):
         self.commands = BitBakeServerCommands(self)
         self.autoregister_all_functions(self.commands, "")
         self.interface = interface
+        self.single_use = False
+        if (interface[1] == 0):     # anonymous port, not getting reused
+            self.single_use = True
 
     def addcooker(self, cooker):
         BaseImplServer.addcooker(self, cooker)
@@ -264,12 +269,9 @@ class XMLRPCServer(SimpleXMLRPCServer, BaseImplServer):
         Serve Requests. Overloaded to honor a quit command
         """
         self.quit = False
-        self.timeout = 0 # Run Idle calls for our first callback
         while not self.quit:
-            #print "Idle queue length %s" % len(self._idlefuns)
-            self.handle_request()
-            #print "Idle timeout, running idle functions"
-            nextsleep = None
+            fds = [self]
+            nextsleep = 0.1
             for function, data in self._idlefuns.items():
                 try:
                     retval = function(self, data, False)
@@ -277,21 +279,22 @@ class XMLRPCServer(SimpleXMLRPCServer, BaseImplServer):
                         del self._idlefuns[function]
                     elif retval is True:
                         nextsleep = 0
-                    elif nextsleep is 0:
-                        continue
-                    elif nextsleep is None:
-                        nextsleep = retval
-                    elif retval < nextsleep:
-                        nextsleep = retval
+                    else:
+                        fds = fds + retval
                 except SystemExit:
                     raise
                 except:
                     import traceback
                     traceback.print_exc()
                     pass
-            if nextsleep is None and len(self._idlefuns) > 0:
-                nextsleep = 0
-            self.timeout = nextsleep
+
+            socktimeout = self.socket.gettimeout() or nextsleep
+            socktimeout = min(socktimeout, nextsleep)
+            # Mirror what BaseServer handle_request would do
+            fd_sets = select.select(fds, [], [], socktimeout)
+            if fd_sets[0] and self in fd_sets[0]:
+                self._handle_request_noblock()
+
         # Tell idle functions we're exiting
         for function, data in self._idlefuns.items():
             try:

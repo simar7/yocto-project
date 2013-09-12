@@ -360,10 +360,10 @@ EOF
 		package_write_smart_config ${target_rootfs}
 		# Do the following configurations here, to avoid them being saved for field upgrade
 		if [ "x${NO_RECOMMENDATIONS}" = "x1" ]; then
-			smart --data-dir=$1/var/lib/smart config --set ignore-all-recommends=1
+			smart --data-dir=${target_rootfs}/var/lib/smart config --set ignore-all-recommends=1
 		fi
 		for i in ${PACKAGE_EXCLUDE}; do
-			smart --data-dir=$1/var/lib/smart flag --set exclude-packages $i
+			smart --data-dir=${target_rootfs}/var/lib/smart flag --set exclude-packages $i
 		done
 
 		# Optional debugging
@@ -472,11 +472,8 @@ EOF
 		echo "Attempting $pkgs_to_install"
 		echo "Note: see `dirname ${BB_LOGFILE}`/log.do_${task}_attemptonly.${PID}"
 		translate_oe_to_smart ${sdk_mode} --attemptonly $package_attemptonly
-		for each_pkg in $pkgs_to_install ;  do
-			# We need to try each package individually as a single dependency failure
-			# will break the whole set otherwise.
-			smart --data-dir=${target_rootfs}/var/lib/smart install -y $each_pkg >> "`dirname ${BB_LOGFILE}`/log.do_${task}_attemptonly.${PID}" 2>&1 || true
-		done
+		echo "Attempting $pkgs_to_install" >> "`dirname ${BB_LOGFILE}`/log.do_${task}_attemptonly.${PID}"
+		smart --data-dir=${target_rootfs}/var/lib/smart install --attempt -y ${pkgs_to_install} >> "`dirname ${BB_LOGFILE}`/log.do_${task}_attemptonly.${PID}" 2>&1
 	fi
 }
 
@@ -1069,7 +1066,7 @@ python do_package_rpm () {
             clean_licenses = get_licenses(d)
             pkgwritesrpmdir = bb.data.expand('${PKGWRITEDIRSRPM}/${PACKAGE_ARCH_EXTEND}', d)
             pkgwritesrpmdir = pkgwritesrpmdir + '/' + clean_licenses
-            bb.mkdirhier(pkgwritesrpmdir)
+            bb.utils.mkdirhier(pkgwritesrpmdir)
             os.chmod(pkgwritesrpmdir, 0755)
             return pkgwritesrpmdir
             
@@ -1082,11 +1079,10 @@ python do_package_rpm () {
         return name
 
     workdir = d.getVar('WORKDIR', True)
-    outdir = d.getVar('DEPLOY_DIR_IPK', True)
     tmpdir = d.getVar('TMPDIR', True)
     pkgd = d.getVar('PKGD', True)
     pkgdest = d.getVar('PKGDEST', True)
-    if not workdir or not outdir or not pkgd or not tmpdir:
+    if not workdir or not pkgd or not tmpdir:
         bb.error("Variables incorrectly set, unable to package")
         return
 
@@ -1123,7 +1119,7 @@ python do_package_rpm () {
     pkgwritedir = d.expand('${PKGWRITEDIRRPM}/${PACKAGE_ARCH_EXTEND}')
     pkgarch = d.expand('${PACKAGE_ARCH_EXTEND}${TARGET_VENDOR}-${TARGET_OS}')
     magicfile = d.expand('${STAGING_DIR_NATIVE}${datadir_native}/misc/magic.mgc')
-    bb.mkdirhier(pkgwritedir)
+    bb.utils.mkdirhier(pkgwritedir)
     os.chmod(pkgwritedir, 0755)
 
     cmd = rpmbuild

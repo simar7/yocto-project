@@ -5,13 +5,13 @@ PREFERRED_PROVIDER_virtual/libgles1 ?= "mesa"
 PREFERRED_PROVIDER_virtual/libgles2 ?= "mesa"
 
 XSERVER ?= "xserver-xorg \
-            mesa-driver-swrast \
+            ${@base_contains('DISTRO_FEATURES', 'opengl', 'mesa-driver-swrast', '', d)} \
             xf86-input-evdev \
             xf86-input-mouse \
             xf86-video-fbdev \
             xf86-input-keyboard"
 
-MACHINE_FEATURES = "apm alsa pcmcia bluetooth irda usbgadget screen"
+MACHINE_FEATURES = "alsa pcmcia bluetooth irda usbgadget screen"
 
 MACHINEOVERRIDES =. "qemuall:"
 

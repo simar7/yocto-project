@@ -1,4 +1,5 @@
 import unittest
+import re
 from oeqa.oetest import oeRuntimeTest
 from oeqa.utils.decorators import *
 from oeqa.utils.httpserver import HTTPService
@@ -11,14 +12,13 @@ def setUpModule():
 
 class SmartTest(oeRuntimeTest):
 
-    longMessage = True
-
     @skipUnlessPassed('test_smart_help')
     def smart(self, command, expected = 0):
         command = 'smart %s' % command
-        status, output = self.target.run(command)
+        status, output = self.target.run(command, 500)
         message = os.linesep.join([command, output])
         self.assertEqual(status, expected, message)
+        self.assertFalse("Cannot allocate memory" in output, message)
         return output
 
 class SmartBasicTest(SmartTest):
@@ -46,7 +46,7 @@ class SmartRepoTest(SmartTest):
 
     @classmethod
     def setUpClass(self):
-        self.repo_server = HTTPService(oeRuntimeTest.tc.d.getVar('DEPLOY_DIR', True))
+        self.repo_server = HTTPService(oeRuntimeTest.tc.d.getVar('DEPLOY_DIR', True), oeRuntimeTest.tc.qemu.host_ip)
         self.repo_server.start()
 
     @classmethod
@@ -59,8 +59,10 @@ class SmartRepoTest(SmartTest):
     def test_smart_channel_add(self):
         image_pkgtype = self.tc.d.getVar('IMAGE_PKGTYPE', True)
         deploy_url = 'http://%s:%s/%s' %(self.tc.qemu.host_ip, self.repo_server.port, image_pkgtype)
+        pkgarchs = self.tc.d.getVar('PACKAGE_ARCHS', True)
         for arch in os.listdir('%s/%s' % (self.repo_server.root_dir, image_pkgtype)):
-            self.smart('channel -y --add {a} type=rpm-md baseurl={u}/{a}'.format(a=arch, u=deploy_url))
+            if arch in pkgarchs:
+                self.smart('channel -y --add {a} type=rpm-md baseurl={u}/{a}'.format(a=arch, u=deploy_url))
         self.smart('update')
 
     def test_smart_channel_help(self):
@@ -95,13 +97,11 @@ class SmartRepoTest(SmartTest):
 
     @skipUnlessPassed('test_smart_channel_add')
     def test_smart_install_from_http(self):
-        url = 'http://'
         output = self.smart('download --urls psplash-default')
-        for line in output.splitlines():
-            if line.startswith(url):
-                url = line
+        url = re.search('(http://.*/psplash-default.*\.rpm)', output)
+        self.assertTrue(url, msg="Couln't find download url in %s" % output)
         self.smart('remove -y psplash-default')
-        self.smart('install -y %s' % url)
+        self.smart('install -y %s' % url.group(0))
 
     @skipUnlessPassed('test_smart_install')
     def test_smart_reinstall(self):

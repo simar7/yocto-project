@@ -10,16 +10,17 @@ HOMEPAGE = "https://btrfs.wiki.kernel.org"
 LICENSE = "GPLv2"
 LIC_FILES_CHKSUM = "file://COPYING;md5=fcb02dc552a041dee27e4b85c7396067"
 SECTION = "base"
-DEPENDS = "util-linux attr"
+DEPENDS = "util-linux attr e2fsprogs lzo acl"
 
 SRCREV = "194aa4a1bd6447bb545286d0bcb0b0be8204d79f"
-SRC_URI = "git://git.kernel.org/pub/scm/linux/kernel/git/mason/btrfs-progs.git;protocol=git"
+SRC_URI = "git://git.kernel.org/pub/scm/linux/kernel/git/mason/btrfs-progs.git"
 
 S = "${WORKDIR}/git"
 
 PV = "0.20+git${SRCPV}"
 
 SRC_URI += "file://weak-defaults.patch"
+SRC_URI += "file://btrfs-progs-fix-parallel-build.patch"
 
 do_install () {
 	oe_runmake 'DESTDIR=${D}' install

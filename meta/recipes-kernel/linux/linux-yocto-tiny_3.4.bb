@@ -8,17 +8,17 @@ KBRANCH = "${KBRANCH_DEFAULT}"
 LINUX_KERNEL_TYPE = "tiny"
 KCONFIG_MODE = "--allnoconfig"
 
-LINUX_VERSION ?= "3.4.52"
+LINUX_VERSION ?= "3.4.59"
 
 KMETA = "meta"
 
-SRCREV_machine ?= "4122d6cf3f9e1fd6d54f6e13af29c4c589289fdc"
-SRCREV_meta ?= "7250de4d4afc2558082cd42b8a0d151903436e8f"
+SRCREV_machine ?= "ea977edd05ae2ebfa82731e0bee309bdfd08abee"
+SRCREV_meta ?= "f36797c2df3fbe9491c8ac5977fb691f4a75e9b7"
 
 PR = "${INC_PR}.1"
 PV = "${LINUX_VERSION}+git${SRCPV}"
 
-SRC_URI = "git://git.yoctoproject.org/linux-yocto-3.4.git;protocol=git;bareclone=1;branch=${KBRANCH},meta;name=machine,meta"
+SRC_URI = "git://git.yoctoproject.org/linux-yocto-3.4.git;bareclone=1;branch=${KBRANCH},meta;name=machine,meta"
 
 COMPATIBLE_MACHINE = "(qemux86)"
 

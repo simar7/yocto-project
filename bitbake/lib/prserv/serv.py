@@ -2,6 +2,8 @@ import os,sys,logging
 import signal, time, atexit, threading
 from SimpleXMLRPCServer import SimpleXMLRPCServer, SimpleXMLRPCRequestHandler
 import xmlrpclib
+import threading
+import Queue
 
 try:
     import sqlite3
@@ -31,19 +33,17 @@ class Handler(SimpleXMLRPCRequestHandler):
 PIDPREFIX = "/tmp/PRServer_%s_%s.pid"
 singleton = None
 
+
 class PRServer(SimpleXMLRPCServer):
     def __init__(self, dbfile, logfile, interface, daemon=True):
         ''' constructor '''
         SimpleXMLRPCServer.__init__(self, interface,
-                                    requestHandler=SimpleXMLRPCRequestHandler,
                                     logRequests=False, allow_none=True)
         self.dbfile=dbfile
         self.daemon=daemon
         self.logfile=logfile
         self.working_thread=None
         self.host, self.port = self.socket.getsockname()
-        self.db=prserv.db.PRData(dbfile)
-        self.table=self.db["PRMAIN"]
         self.pidfile=PIDPREFIX % (self.host, self.port)
 
         self.register_function(self.getPR, "getPR")
@@ -52,6 +52,32 @@ class PRServer(SimpleXMLRPCServer):
         self.register_function(self.export, "export")
         self.register_function(self.importone, "importone")
         self.register_introspection_functions()
+
+        self.db = prserv.db.PRData(self.dbfile)
+        self.table = self.db["PRMAIN"]
+
+        self.requestqueue = Queue.Queue()
+        self.handlerthread = threading.Thread(target = self.process_request_thread)
+        self.handlerthread.daemon = False
+
+    def process_request_thread(self):
+        """Same as in BaseServer but as a thread.
+
+        In addition, exception handling is done here.
+
+        """
+        while True:
+            (request, client_address) = self.requestqueue.get()
+            try:
+                self.finish_request(request, client_address)
+                self.shutdown_request(request)
+            except:
+                self.handle_error(request, client_address)
+                self.shutdown_request(request)
+                self.table.sync()
+
+    def process_request(self, request, client_address):
+        self.requestqueue.put((request, client_address))
 
     def export(self, version=None, pkgarch=None, checksum=None, colinfo=True):
         try:
@@ -90,9 +116,11 @@ class PRServer(SimpleXMLRPCServer):
         logger.info("Started PRServer with DBfile: %s, IP: %s, PORT: %s, PID: %s" %
                      (self.dbfile, self.host, self.port, str(os.getpid())))
 
+        self.handlerthread.start()
         while not self.quit:
             self.handle_request()
 
+        self.table.sync()
         logger.info("PRServer: stopping...")
         self.server_close()
         return
@@ -143,6 +171,11 @@ class PRServer(SimpleXMLRPCServer):
         os.dup2(so.fileno(),sys.stdout.fileno())
         os.dup2(se.fileno(),sys.stderr.fileno())
 
+        # Clear out all log handlers prior to the fork() to avoid calling
+        # event handlers not part of the PRserver
+        for logger_iter in logging.Logger.manager.loggerDict.keys():
+            logging.getLogger(logger_iter).handlers = []
+
         # Ensure logging makes it to the logfile
         streamhandler = logging.StreamHandler()
         streamhandler.setLevel(logging.DEBUG)
@@ -160,7 +193,7 @@ class PRServer(SimpleXMLRPCServer):
         self.delpid()
         os._exit(0)
 
-class PRServSingleton():
+class PRServSingleton(object):
     def __init__(self, dbfile, logfile, interface):
         self.dbfile = dbfile
         self.logfile = logfile
@@ -172,12 +205,11 @@ class PRServSingleton():
         self.prserv = PRServer(self.dbfile, self.logfile, self.interface)
         self.prserv.start()
         self.host, self.port = self.prserv.getinfo()
-        del self.prserv.db
 
     def getinfo(self):
         return (self.host, self.port)
 
-class PRServerConnection():
+class PRServerConnection(object):
     def __init__(self, host, port):
         if is_local_special(host, port):
             host, port = singleton.getinfo()

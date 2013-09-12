@@ -696,13 +696,20 @@ class RunQueueData:
                     prov_list[prov].append(fn)
         for prov in prov_list:
             if len(prov_list[prov]) > 1 and prov not in self.multi_provider_whitelist:
+                seen_pn = []
+                # If two versions of the same PN are being built its fatal, we don't support it.
+                for fn in prov_list[prov]:
+                    pn = self.dataCache.pkg_fn[fn]
+                    if pn not in seen_pn:
+                        seen_pn.append(pn)
+                    else:
+                        bb.fatal("Multiple versions of %s are due to be built (%s). Only one version of a given PN should be built in any given build. You likely need to set PREFERRED_VERSION_%s to select the correct version or don't depend on multiple versions." % (pn, " ".join(prov_list[prov]), pn))
                 msg = "Multiple .bb files are due to be built which each provide %s (%s)." % (prov, " ".join(prov_list[prov]))
                 if self.warn_multi_bb:
                     logger.warn(msg)
                 else:
                     msg += "\n This usually means one provides something the other doesn't and should."
                     logger.error(msg)
-
 
         # Create a whitelist usable by the stamp checks
         stampfnwhitelist = []
@@ -852,6 +859,9 @@ class RunQueue:
             "logdefaultverboselogs" : bb.msg.loggerVerboseLogs,
             "logdefaultdomain" : bb.msg.loggerDefaultDomains,
             "prhost" : self.cooker.prhost,
+            "buildname" : self.cfgData.getVar("BUILDNAME", True),
+            "date" : self.cfgData.getVar("DATE", True),
+            "time" : self.cfgData.getVar("TIME", True),
         }
 
         worker.stdin.write("<cookerconfig>" + pickle.dumps(self.cooker.configuration) + "</cookerconfig>")
@@ -894,6 +904,14 @@ class RunQueue:
         self.workerpipe.read()
         if self.fakeworkerpipe:
             self.fakeworkerpipe.read()
+
+    def active_fds(self):
+        fds = []
+        if self.workerpipe:
+            fds.append(self.workerpipe.input)
+        if self.fakeworkerpipe:
+            fds.append(self.fakeworkerpipe.input)
+        return fds
 
     def check_stamp_task(self, task, taskname = None, recurse = False, cache = None):
         def get_timestamp(f):
@@ -972,7 +990,7 @@ class RunQueue:
         (if the abort on failure configuration option isn't set)
         """
 
-        retval = 0.5
+        retval = True
 
         if self.state is runQueuePrepare:
             self.rqexe = RunQueueExecuteDummy(self)
@@ -1375,7 +1393,7 @@ class RunQueueExecuteTasks(RunQueueExecute):
 
         if self.stats.active > 0:
             self.rq.read_workers()
-            return 0.5
+            return self.rq.active_fds()
 
         if len(self.failed_fnids) != 0:
             self.rq.state = runQueueFailed
@@ -1627,6 +1645,7 @@ class RunQueueExecuteScenequeue(RunQueueExecute):
 
     def task_complete(self, task):
         self.stats.taskCompleted()
+        bb.event.fire(sceneQueueTaskCompleted(task, self.stats, self.rq), self.cfgData)
         self.task_completeoutright(task)
 
     def task_fail(self, task, result):
@@ -1715,7 +1734,7 @@ class RunQueueExecuteScenequeue(RunQueueExecute):
 
         if self.stats.active > 0:
             self.rq.read_workers()
-            return 0.5
+            return self.rq.active_fds()
 
         # Convert scenequeue_covered task numbers into full taskgraph ids
         oldcovered = self.scenequeue_covered
@@ -1808,6 +1827,11 @@ class sceneQueueTaskFailed(sceneQueueEvent):
 class runQueueTaskCompleted(runQueueEvent):
     """
     Event notifing a task completed
+    """
+
+class sceneQueueTaskCompleted(sceneQueueEvent):
+    """
+    Event notifing a setscene task completed
     """
 
 class runQueuePipe():

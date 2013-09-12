@@ -101,7 +101,7 @@ class QemuRunner:
             reachedlogin = False
             stopread = False
             while time.time() < endtime and not stopread:
-                sread, swrite, serror = select.select(socklist, [], [], 0)
+                sread, swrite, serror = select.select(socklist, [], [], 5)
                 for sock in sread:
                     if sock is self.server_socket:
                         self.qemusock, addr = self.server_socket.accept()
@@ -133,9 +133,9 @@ class QemuRunner:
                 return False
         else:
             bb.note("Qemu pid didn't appeared in %s seconds" % self.runqemutime)
+            output = self.runqemu.stdout
             self.kill()
-            bb.note("Output from runqemu: %s " % self.runqemu.stdout.read())
-            self.runqemu.stdout.close()
+            bb.note("Output from runqemu:\n%s" % output.read())
             return False
 
         return self.is_alive()

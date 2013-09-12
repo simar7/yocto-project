@@ -2,6 +2,7 @@ import logging
 import os.path
 import errno
 import prserv
+import time
 
 try:
     import sqlite3
@@ -14,7 +15,7 @@ sqlversion = sqlite3.sqlite_version_info
 if sqlversion[0] < 3 or (sqlversion[0] == 3 and sqlversion[1] < 3):
     raise Exception("sqlite3 version 3.3.0 or later is required.")
 
-class PRTable():
+class PRTable(object):
     def __init__(self, conn, table, nohist):
         self.conn = conn
         self.nohist = nohist
@@ -32,15 +33,19 @@ class PRTable():
 
     def _execute(self, *query):
         """Execute a query, waiting to acquire a lock if necessary"""
-        count = 0
+        start = time.time()
+        end = start + 20
         while True:
             try:
                 return self.conn.execute(*query)
             except sqlite3.OperationalError as exc:
-                if 'database is locked' in str(exc) and count < 500:
-                    count = count + 1
+                if 'is locked' in str(exc) and end > time.time():
                     continue
                 raise exc
+
+    def sync(self):
+        self.conn.commit()
+        self._execute("BEGIN EXCLUSIVE TRANSACTION")
 
     def _getValueHist(self, version, pkgarch, checksum):
         data=self._execute("SELECT value FROM %s WHERE version=? AND pkgarch=? AND checksum=?;" % self.table,
@@ -51,11 +56,9 @@ class PRTable():
         else:
             #no value found, try to insert
             try:
-                self._execute("BEGIN")
-                self._execute("INSERT OR ROLLBACK INTO %s VALUES (?, ?, ?, (select ifnull(max(value)+1,0) from %s where version=? AND pkgarch=?));"
+                self._execute("INSERT INTO %s VALUES (?, ?, ?, (select ifnull(max(value)+1,0) from %s where version=? AND pkgarch=?));"
                            % (self.table,self.table),
                            (version,pkgarch, checksum,version, pkgarch))
-                self.conn.commit()
             except sqlite3.IntegrityError as exc:
                 logger.error(str(exc))
 
@@ -79,11 +82,9 @@ class PRTable():
         else:
             #no value found, try to insert
             try:
-                self._execute("BEGIN")
                 self._execute("INSERT OR REPLACE INTO %s VALUES (?, ?, ?, (select ifnull(max(value)+1,0) from %s where version=? AND pkgarch=?));"
                                % (self.table,self.table),
                                (version, pkgarch, checksum, version, pkgarch))
-                self.conn.commit()
             except sqlite3.IntegrityError as exc:
                 logger.error(str(exc))
                 self.conn.rollback()
@@ -112,10 +113,8 @@ class PRTable():
         else:
             #no value found, try to insert
             try:
-                self._execute("BEGIN")
-                self._execute("INSERT OR ROLLBACK INTO %s VALUES (?, ?, ?, ?);"  % (self.table),
+                self._execute("INSERT INTO %s VALUES (?, ?, ?, ?);"  % (self.table),
                            (version, pkgarch, checksum, value))
-                self.conn.commit()
             except sqlite3.IntegrityError as exc:
                 logger.error(str(exc))
 
@@ -129,18 +128,14 @@ class PRTable():
     def _importNohist(self, version, pkgarch, checksum, value):
         try:
             #try to insert
-            self._execute("BEGIN")
-            self._execute("INSERT OR ROLLBACK INTO %s VALUES (?, ?, ?, ?);"  % (self.table),
+            self._execute("INSERT INTO %s VALUES (?, ?, ?, ?);"  % (self.table),
                            (version, pkgarch, checksum,value))
-            self.conn.commit()
         except sqlite3.IntegrityError as exc:
             #already have the record, try to update
             try:
-                self._execute("BEGIN")
                 self._execute("UPDATE %s SET value=? WHERE version=? AND pkgarch=? AND checksum=? AND value<?"  
                               % (self.table),
                                (value,version,pkgarch,checksum,value))
-                self.conn.commit()
             except sqlite3.IntegrityError as exc:
                 logger.error(str(exc))
 
@@ -223,7 +218,7 @@ class PRData(object):
         except OSError as e:
             if e.errno != errno.EEXIST:
                 raise e
-        self.connection=sqlite3.connect(self.filename, isolation_level="DEFERRED")
+        self.connection=sqlite3.connect(self.filename, isolation_level="EXCLUSIVE", check_same_thread = False)
         self.connection.row_factory=sqlite3.Row
         self._tables={}
 
