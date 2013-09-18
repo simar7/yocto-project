@@ -40,7 +40,7 @@ logger = logging.getLogger("BitBake.Data")
 
 __setvar_keyword__ = ["_append", "_prepend", "_remove"]
 __setvar_regexp__ = re.compile('(?P<base>.*?)(?P<keyword>_append|_prepend|_remove)(_(?P<add>.*))?$')
-__expand_var_regexp__ = re.compile(r"\${[^{}]+}")
+__expand_var_regexp__ = re.compile(r"\${[^{}@]+}")
 __expand_python_regexp__ = re.compile(r"\${@.+?}")
 
 def infer_caller_details(loginfo, parent = False, varval = True):
@@ -94,9 +94,14 @@ class VariableParse:
             if self.varname and key:
                 if self.varname == key:
                     raise Exception("variable %s references itself!" % self.varname)
+            if key in self.d.expand_cache:
+                varparse = self.d.expand_cache[key]
+                self.references |= varparse.references
+                self.execs |= varparse.execs
+                return varparse.value
             var = self.d.getVar(key, True)
+            self.references.add(key)
             if var is not None:
-                self.references.add(key)
                 return var
             else:
                 return match.group()
@@ -573,10 +578,17 @@ class DataSmart(MutableMapping):
         if flag == "defaultval" and '_' in var:
             self._setvar_update_overrides(var)
 
+        if flag == "unexport" or flag == "export":
+            if not "__exportlist" in self.dict:
+                self._makeShadowCopy("__exportlist")
+            if not "_content" in self.dict["__exportlist"]:
+                self.dict["__exportlist"]["_content"] = set()
+            self.dict["__exportlist"]["_content"].add(var)
+
     def getVarFlag(self, var, flag, expand=False, noweakdefault=False):
         local_var = self._findVar(var)
         value = None
-        if local_var:
+        if local_var is not None:
             if flag in local_var:
                 value = copy.copy(local_var[flag])
             elif flag == "_content" and "defaultval" in local_var and not noweakdefault:
@@ -586,8 +598,10 @@ class DataSmart(MutableMapping):
             cachename = None
             if flag == "_content":
                 cachename = var
+            else:
+                cachename = var + "[" + flag + "]"
             value = self.expand(value, cachename)
-        if value and flag == "_content" and local_var and "_removeactive" in local_var:
+        if value is not None and flag == "_content" and local_var is not None and "_removeactive" in local_var:
             filtered = filter(lambda v: v not in local_var["_removeactive"],
                               value.split(" "))
             value = " ".join(filtered)
@@ -635,16 +649,17 @@ class DataSmart(MutableMapping):
             self.varhistory.record(**loginfo)
             self.dict[var][i] = flags[i]
 
-    def getVarFlags(self, var):
+    def getVarFlags(self, var, expand = False, internalflags=False):
         local_var = self._findVar(var)
         flags = {}
 
         if local_var:
             for i in local_var:
-                if i.startswith("_"):
+                if i.startswith("_") and not internalflags:
                     continue
                 flags[i] = local_var[i]
-
+                if expand and i in expand:
+                    flags[i] = self.expand(flags[i], var + "[" + i + "]")
         if len(flags) == 0:
             return None
         return flags
@@ -750,13 +765,16 @@ class DataSmart(MutableMapping):
         for key in keys:
             if key in config_whitelist:
                 continue
+
             value = d.getVar(key, False) or ""
             data.update({key:value})
 
-            varflags = d.getVarFlags(key)
+            varflags = d.getVarFlags(key, internalflags = True)
             if not varflags:
                 continue
             for f in varflags:
+                if f == "_content":
+                    continue
                 data.update({'%s[%s]' % (key, f):varflags[f]})
 
         for key in ["__BBTASKS", "__BBANONFUNCS", "__BBHANDLERS"]:

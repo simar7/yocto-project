@@ -15,7 +15,7 @@ DEPENDS += "${@base_contains('DISTRO_FEATURES', 'pam', 'libpam', '', d)}"
 
 SECTION = "base/shell"
 
-inherit gtk-doc useradd pkgconfig autotools perlnative update-rc.d update-alternatives qemu systemd
+inherit gtk-doc useradd pkgconfig autotools perlnative update-rc.d update-alternatives qemu systemd ptest
 
 SRC_URI = "http://www.freedesktop.org/software/systemd/systemd-${PV}.tar.xz \
            file://0001-use-CAP_MKNOD-ConditionCapability.patch \
@@ -25,6 +25,7 @@ SRC_URI = "http://www.freedesktop.org/software/systemd/systemd-${PV}.tar.xz \
            ${UCLIBCPATCHES} \
            file://00-create-volatile.conf \
            file://init \
+           file://run-ptest \
           "
 SRC_URI[md5sum] = "89e36f2d3ba963020b72738549954cbc"
 SRC_URI[sha256sum] = "4c993de071118ea1df7ffc4be26ef0b0d78354ef15b2743a2783d20edfcde9de"
@@ -112,6 +113,19 @@ do_install() {
 		install -m 0755 ${WORKDIR}/init ${D}${sysconfdir}/init.d/systemd-udevd
 		sed -i s%@UDEVD@%${rootlibexecdir}/systemd/systemd-udevd% ${D}${sysconfdir}/init.d/systemd-udevd
 	fi
+}
+
+do_install_ptest () {
+       install -d ${D}${PTEST_PATH}/test
+       install -d ${D}${libdir}/udev/rules.d
+       install ${B}/test/* ${D}${PTEST_PATH}/test
+       install -m 0755  ${B}/test-udev ${D}${PTEST_PATH}/
+       install -d ${D}${PTEST_PATH}/build-aux
+       cp -rf ${B}/rules ${D}${PTEST_PATH}/
+       cp ${B}/Makefile ${D}${PTEST_PATH}/
+       cp ${B}/build-aux/test-driver ${D}${PTEST_PATH}/build-aux/
+       tar -C ${D}${PTEST_PATH}/test -xJf ${B}/test/sys.tar.xz
+       sed -i 's/"tree"/"ls"/' ${D}${PTEST_PATH}/test/udev-test.pl
 }
 
 python populate_packages_prepend (){
@@ -262,7 +276,7 @@ python __anonymous() {
 # TODO:
 # u-a for runlevel and telinit
 
-ALTERNATIVE_${PN} = "init halt reboot shutdown poweroff"
+ALTERNATIVE_${PN} = "init halt reboot shutdown poweroff runlevel"
 
 ALTERNATIVE_TARGET[init] = "${rootlibexecdir}/systemd/systemd"
 ALTERNATIVE_LINK_NAME[init] = "${base_sbindir}/init"
@@ -283,6 +297,10 @@ ALTERNATIVE_PRIORITY[shutdown] ?= "300"
 ALTERNATIVE_TARGET[poweroff] = "${base_bindir}/systemctl"
 ALTERNATIVE_LINK_NAME[poweroff] = "${base_sbindir}/poweroff"
 ALTERNATIVE_PRIORITY[poweroff] ?= "300"
+
+ALTERNATIVE_TARGET[runlevel] = "${base_bindir}/systemctl"
+ALTERNATIVE_LINK_NAME[runlevel] = "${base_sbindir}/runlevel"
+ALTERNATIVE_PRIORITY[runlevel] ?= "300"
 
 pkg_postinst_udev-hwdb () {
 	if test -n "$D"; then

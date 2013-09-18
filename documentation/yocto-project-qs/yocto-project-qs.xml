@@ -11,6 +11,21 @@
             <holder>Linux Foundation</holder>
         </copyright>
 
+        <legalnotice>
+            <para>
+                Permission is granted to copy, distribute and/or modify this document under
+                the terms of the <ulink type="http" url="http://creativecommons.org/licenses/by-sa/2.0/uk/">Creative Commons Attribution-Share Alike 2.0 UK: England &amp; Wales</ulink> as published by Creative Commons.
+            </para>
+            <note>
+                Due to production processes, there could be differences between the Yocto Project
+                documentation bundled in the release tarball and the
+                <ulink url='&YOCTO_DOCS_QS_URL;'>Yocto Project Quick Start</ulink> on
+                the <ulink url='&YOCTO_HOME_URL;'>Yocto Project</ulink> website.
+                For the latest version of this manual, see the manual on the website.
+            </note>
+        </legalnotice>
+
+
         <abstract>
             <imagedata fileref="figures/yocto-project-transp.png"
                         width="6in" depth="1in"
@@ -449,7 +464,12 @@
                  to the Build Directory.
                  Later, when the build completes, the Build Directory contains all the files
                  created during the build.
-                 </para></listitem>
+                 <note>
+                     For information on running a memory-resident BitBake, see
+                     the
+                     <ulink url='&YOCTO_DOCS_REF_URL;#structure-memres-core-script'><filename>oe-init-build-env-memres</filename></ulink>
+                     setup script.
+                 </note></para></listitem>
          </itemizedlist>
          <para>
              Take some time to examine your <filename>local.conf</filename> file

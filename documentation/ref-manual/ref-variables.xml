@@ -252,9 +252,47 @@
         <glossentry id='var-BAD_RECOMMENDATIONS'><glossterm>BAD_RECOMMENDATIONS</glossterm>
             <glossdef>
                 <para>
-                    A list of packages not to install despite being recommended by a recipe.
+                    Lists "recommended-only" packages to not install.
+                    Recommended-only packages are packages installed only
+                    through the
+                    <link linkend='var-RRECOMMENDS'><filename>RRECOMMENDS</filename></link>
+                    variable.
+                    You can prevent any of these "recommended" packages from
+                    being installed by listing them with the
+                    <filename>BAD_RECOMMENDATIONS</filename> variable:
+                    <literallayout class='monospaced'>
+     BAD_RECOMMENDATIONS = "&lt;package_name&gt; &lt;package_name&gt; &lt;package_name&gt; ..."
+                    </literallayout>
+                    You can set this variable globally in your
+                    <filename>local.conf</filename> file or you can attach it to
+                    a specific image recipe by using the recipe name override:
+                    <literallayout class='monospaced'>
+     BAD_RECOMMENDATIONS_pn-&lt;target_image&gt; = "&lt;package_name&gt;"
+                    </literallayout>
+                </para>
+
+                <para>
+                    It is important to realize that if you choose to not install
+                    packages using this variable and some other packages are
+                    dependent on them (i.e. listed in a recipe's
+                    <link linkend='var-RDEPENDS'><filename>RDEPENDS</filename></link>
+                    variable), the OpenEmbedded build system ignores your
+                    request and will install the packages to avoid dependency
+                    errors.
+                </para>
+
+                <para>
                     Support for this variable exists only when using the
-                    IPK packaging backend.
+                    IPK and RPM packaging backend.
+                    Support does not exist for DEB.
+                </para>
+
+                <para>
+                    See the
+                    <link linkend='var-NO_RECOMMENDATIONS'><filename>NO_RECOMMENDATIONS</filename></link>
+                    and the
+                    <link linkend='var-PACKAGE_EXCLUDE'><filename>PACKAGE_EXCLUDE</filename></link>
+                    variables for related information.
                 </para>
             </glossdef>
         </glossentry>
@@ -455,6 +493,14 @@
             </glossdef>
         </glossentry>
 
+        <glossentry id='var-BB_NUMBER_THREADS'><glossterm>BB_NUMBER_THREADS</glossterm>
+            <glossdef>
+                <para>The maximum number of tasks BitBake should run in parallel at any one time.
+                    If your host development system supports multiple cores a good rule of thumb
+                    is to set this variable to twice the number of cores.</para>
+            </glossdef>
+        </glossentry>
+
         <glossentry id='var-BBCLASSEXTEND'><glossterm>BBCLASSEXTEND</glossterm>
             <glossdef>
                 <para>
@@ -477,74 +523,6 @@
                     </literallayout>
                 </para>
              </glossdef>
-        </glossentry>
-
-        <glossentry id='var-BBMASK'><glossterm>BBMASK</glossterm>
-            <glossdef>
-                <para>
-                    Prevents BitBake from processing recipes and recipe
-                    append files.
-                    Use the <filename>BBMASK</filename> variable from within the
-                    <filename>conf/local.conf</filename> file found
-                    in the
-                    <ulink url='&YOCTO_DOCS_DEV_URL;#build-directory'>Build Directory</ulink>.
-                </para>
-
-                <para>
-                    You can use the <filename>BBMASK</filename> variable
-                    to "hide" these <filename>.bb</filename> and
-                    <filename>.bbappend</filename> files.
-                    BitBake ignores any recipe or recipe append files that
-                    match the expression.
-                    It is as if BitBake does not see them at all.
-                    Consequently, matching files are not parsed or otherwise
-                    used by BitBake.</para>
-                <para>
-                    The value you provide is passed to Python's regular
-                    expression compiler.
-                    The expression is compared against the full paths to
-                    the files.
-                    For complete syntax information, see Python's
-                    documentation at
-                    <ulink url='http://docs.python.org/release/2.3/lib/re-syntax.html'></ulink>.
-                </para>
-
-                <para>
-                    The following example uses a complete regular expression
-                    to tell BitBake to ignore all recipe and recipe append
-                    files in the <filename>/meta-ti/recipes-misc/</filename>
-                    directory:
-                    <literallayout class='monospaced'>
-     BBMASK = "/meta-ti/recipes-misc/"
-                    </literallayout>
-                    If you want to mask out multiple directories or recipes,
-                    use the vertical bar to separate the regular expression
-                    fragments.
-                    This next example masks out multiple directories and
-                    individual recipes:
-                    <literallayout class='monospaced'>
-     BBMASK = "meta-ti/recipes-misc/|meta-ti/recipes-ti/packagegroup/"
-     BBMASK .= "|.*meta-oe/recipes-support/"
-     BBMASK .= "|.*openldap"
-     BBMASK .= "|.*opencv"
-     BBMASK .= "|.*lzma"
-                    </literallayout>
-                    Notice how the vertical bar is used to append the fragments.
-                    <note>
-                        When specifying a directory name, use the trailing
-                        slash character to ensure you match just that directory
-                        name.
-                    </note>
-                </para>
-            </glossdef>
-        </glossentry>
-
-        <glossentry id='var-BB_NUMBER_THREADS'><glossterm>BB_NUMBER_THREADS</glossterm>
-            <glossdef>
-                <para>The maximum number of tasks BitBake should run in parallel at any one time.
-                    If your host development system supports multiple cores a good rule of thumb
-                    is to set this variable to twice the number of cores.</para>
-            </glossdef>
         </glossentry>
 
         <glossentry id='var-BBFILE_COLLECTIONS'><glossterm>BBFILE_COLLECTIONS</glossterm>
@@ -603,13 +581,6 @@
         <glossentry id='var-BBFILES'><glossterm>BBFILES</glossterm>
             <glossdef>
                 <para>List of recipe files used by BitBake to build software.</para>
-            </glossdef>
-        </glossentry>
-
-        <glossentry id='var-BBPATH'><glossterm>BBPATH</glossterm>
-            <glossdef>
-                <para>Used by BitBake to locate <filename>.bbclass</filename> and configuration files.
-                    This variable is analogous to the <filename>PATH</filename> variable.</para>
             </glossdef>
         </glossentry>
 
@@ -672,6 +643,95 @@ Core layer for images cannot be removed
             </glossdef>
         </glossentry>
 
+        <glossentry id='var-BBMASK'><glossterm>BBMASK</glossterm>
+            <glossdef>
+                <para>
+                    Prevents BitBake from processing recipes and recipe
+                    append files.
+                    Use the <filename>BBMASK</filename> variable from within the
+                    <filename>conf/local.conf</filename> file found
+                    in the
+                    <ulink url='&YOCTO_DOCS_DEV_URL;#build-directory'>Build Directory</ulink>.
+                </para>
+
+                <para>
+                    You can use the <filename>BBMASK</filename> variable
+                    to "hide" these <filename>.bb</filename> and
+                    <filename>.bbappend</filename> files.
+                    BitBake ignores any recipe or recipe append files that
+                    match the expression.
+                    It is as if BitBake does not see them at all.
+                    Consequently, matching files are not parsed or otherwise
+                    used by BitBake.</para>
+                <para>
+                    The value you provide is passed to Python's regular
+                    expression compiler.
+                    The expression is compared against the full paths to
+                    the files.
+                    For complete syntax information, see Python's
+                    documentation at
+                    <ulink url='http://docs.python.org/release/2.3/lib/re-syntax.html'></ulink>.
+                </para>
+
+                <para>
+                    The following example uses a complete regular expression
+                    to tell BitBake to ignore all recipe and recipe append
+                    files in the <filename>/meta-ti/recipes-misc/</filename>
+                    directory:
+                    <literallayout class='monospaced'>
+     BBMASK = "/meta-ti/recipes-misc/"
+                    </literallayout>
+                    If you want to mask out multiple directories or recipes,
+                    use the vertical bar to separate the regular expression
+                    fragments.
+                    This next example masks out multiple directories and
+                    individual recipes:
+                    <literallayout class='monospaced'>
+     BBMASK = "meta-ti/recipes-misc/|meta-ti/recipes-ti/packagegroup/"
+     BBMASK .= "|.*meta-oe/recipes-support/"
+     BBMASK .= "|.*openldap"
+     BBMASK .= "|.*opencv"
+     BBMASK .= "|.*lzma"
+                    </literallayout>
+                    Notice how the vertical bar is used to append the fragments.
+                    <note>
+                        When specifying a directory name, use the trailing
+                        slash character to ensure you match just that directory
+                        name.
+                    </note>
+                </para>
+            </glossdef>
+        </glossentry>
+
+        <glossentry id='var-BBPATH'><glossterm>BBPATH</glossterm>
+            <glossdef>
+                <para>Used by BitBake to locate <filename>.bbclass</filename> and configuration files.
+                    This variable is analogous to the <filename>PATH</filename> variable.</para>
+            </glossdef>
+        </glossentry>
+
+        <glossentry id='var-BBSERVER'><glossterm>BBSERVER</glossterm>
+            <glossdef>
+                <para>
+                    Points to the server that runs memory-resident BitBake.
+                    This variable is set by the 
+                    <link linkend='structure-memres-core-script'><filename>oe-init-build-env-memres</filename></link>
+                    setup script and should not be hand-edited.
+                    The variable is only used when you employ memory-resident
+                    BitBake.
+                    The setup script exports the value as follows:
+                    <literallayout class='monospaced'>
+     export BBSERVER=localhost:$port
+                    </literallayout>
+                    For more information on how the 
+                    <filename>BBSERVER</filename> is used, see the 
+                    <filename>oe-init-build-env-memres</filename> script, which
+                    is located in the 
+                    <ulink url='&YOCTO_DOCS_DEV_URL;#source-directory'>Source Directory</ulink>.
+                </para>
+            </glossdef>
+        </glossentry>
+
         <glossentry id='var-BINCONFIG_GLOB'><glossterm>BINCONFIG_GLOB</glossterm>
             <glossdef>
                 <para>
@@ -724,13 +784,16 @@ Core layer for images cannot be removed
 
         <glossentry id='var-BUILDDIR'><glossterm>BUILDDIR</glossterm>
             <glossdef>
-                <para>Points to the location of the
+                <para>
+                    Points to the location of the
                     <ulink url='&YOCTO_DOCS_DEV_URL;#build-directory'>Build Directory</ulink>.
                     You can define this directory indirectly through the
                     <link linkend='structure-core-script'><filename>&OE_INIT_FILE;</filename></link>
-                    script by passing in a Build Directory path when you run the
-                    script.
-                    If you run the script and do not provide a Build Directory
+                    and 
+                    <link linkend='structure-memres-core-script'><filename>oe-init-build-env-memres</filename></link>
+                    scripts by passing in a Build Directory path when you run 
+                    the scripts.
+                    If you run the scripts and do not provide a Build Directory
                     path, the <filename>BUILDDIR</filename> defaults to
                     <filename>build</filename> in the current directory.
                 </para>
@@ -968,6 +1031,28 @@ Core layer for images cannot be removed
                     have been built and have their contents in the appropriate
                     sysroots before the recipe's configure task is executed.
                 </para>
+
+                <para>
+                    Consider this simple example for two recipes named "a" and
+                    "b" that produce similarly named packages.
+                    In this example, the <filename>DEPENDS</filename>
+                    statement appears in the "a" recipe:
+                    <literallayout class='monospaced'>
+     DEPENDS = "b"
+                    </literallayout>
+                    Here, the dependency is such that the
+                    <filename>do_configure</filename> task for recipe "a"
+                    depends on the <filename>do_populate_sysroot</filename>
+                    task of recipe "b".
+                    This means anything that recipe "b" puts into sysroot
+                    is available when recipe "a" is configuring itself.
+                </para>
+
+                <para>
+                    For information on runtime dependencies, see the
+                    <link linkend='var-RDEPENDS'><filename>RDEPENDS</filename></link>
+                    variable.
+                </para>
             </glossdef>
         </glossentry>
 
@@ -1145,37 +1230,40 @@ Core layer for images cannot be removed
         <glossentry id='var-DL_DIR'><glossterm>DL_DIR</glossterm>
             <glossdef>
                 <para>
-                    The central download directory used by the build process to store downloads.
-                    You can set this directory by defining the <filename>DL_DIR</filename>
-                    variable in the <filename>/conf/local.conf</filename> file.
+                    The central download directory used by the build process to 
+                    store downloads.
+                    You can set this directory by defining the 
+                    <filename>DL_DIR</filename> variable in the 
+                    <filename>/conf/local.conf</filename> file.
                     This directory is self-maintaining and you should not have
                     to touch it.
-                    By default, the directory is <filename>downloads</filename> in the
+                    By default, the directory is <filename>downloads</filename> 
+                    in the
                     <ulink url='&YOCTO_DOCS_DEV_URL;#build-directory'>Build Directory</ulink>.
                     <literallayout class='monospaced'>
      #DL_DIR ?= "${TOPDIR}/downloads"
                     </literallayout>
-                    To specify a different download directory, simply uncomment the line
-                    and provide your directory.
+                    To specify a different download directory, simply remove 
+                    the comment from the line and provide your directory.
                 </para>
 
                 <para>
-                    During a first build, the system downloads many different source code
-                    tarballs from various upstream projects.
+                    During a first build, the system downloads many different 
+                    source code tarballs from various upstream projects.
                     Downloading can take a while, particularly if your network
                     connection is slow.
                     Tarballs are all stored in the directory defined by
-                    <filename>DL_DIR</filename> and the build system looks there first
-                    to find source tarballs.
+                    <filename>DL_DIR</filename> and the build system looks there 
+                    first to find source tarballs.
                     <note>
-                        When wiping and rebuilding, you can preserve this directory to speed
-                        up this part of subsequent builds.
+                        When wiping and rebuilding, you can preserve this 
+                        directory to speed up this part of subsequent builds.
                     </note>
                 </para>
 
                 <para>
-                    You can safely share this directory between multiple builds on the
-                    same development machine.
+                    You can safely share this directory between multiple builds 
+                    on the same development machine.
                     For additional information on how the build process gets
                     source files when working behind a firewall or proxy server,
                     see this specific question in the
@@ -2784,7 +2872,7 @@ recipes-graphics/xorg-font/font-alias_1.0.3.bb:PR = "${INC_PR}.3"
      MACHINE ?= "qemuppc"
      MACHINE ?= "qemux86"
      MACHINE ?= "qemux86-64"
-     MACHINE ?= "atom-pc"
+     MACHINE ?= "genericx86"
      MACHINE ?= "beagleboard"
      MACHINE ?= "mpc8315e-rdb"
      MACHINE ?= "routerstationpro"
@@ -3136,6 +3224,59 @@ recipes-graphics/xorg-font/font-alias_1.0.3.bb:PR = "${INC_PR}.3"
             </glossdef>
         </glossentry>
 
+        <glossentry id='var-NO_RECOMMENDATIONS'><glossterm>NO_RECOMMENDATIONS</glossterm>
+            <glossdef>
+                <para>
+                    Prevents installation of all "recommended-only" packages.
+                    Recommended-only packages are packages installed only
+                    through the
+                    <link linkend='var-RRECOMMENDS'><filename>RRECOMMENDS</filename></link>
+                    variable).
+                    Setting the <filename>NO_RECOMMENDATIONS</filename> variable
+                    to "1" turns this feature on:
+                    <literallayout class='monospaced'>
+     NO_RECOMMENDATIONS = "1"
+                    </literallayout>
+                    You can set this variable globally in your
+                    <filename>local.conf</filename> file or you can attach it to
+                    a specific image recipe by using the recipe name override:
+                    <literallayout class='monospaced'>
+     NO_RECOMMENDATIONS_pn-&lt;target_image&gt; = "&lt;package_name&gt;"
+                    </literallayout>
+                </para>
+
+                <para>
+                    It is important to realize that if you choose to not install
+                    packages using this variable and some other packages are
+                    dependent on them (i.e. listed in a recipe's
+                    <link linkend='var-RDEPENDS'><filename>RDEPENDS</filename></link>
+                    variable), the OpenEmbedded build system ignores your
+                    request and will install the packages to avoid dependency
+                    errors.
+                    <note>
+                        Some recommended packages might be required for certain
+                        system functionality, such as kernel modules.
+                        It is up to you to add packages with
+                        <link linkend='var-IMAGE_INSTALL'><filename>IMAGE_INSTALL</filename></link>
+                        variable.
+                    </note>
+                </para>
+
+                <para>
+                    Support for this variable exists only when using the
+                    IPK and RPM packaging backend.
+                    Support does not exist for DEB.
+                </para>
+
+                <para>
+                    See the
+                    <link linkend='var-BAD_RECOMMENDATIONS'><filename>BAD_RECOMMENDATIONS</filename></link>
+                    and the
+                    <link linkend='var-PACKAGE_EXCLUDE'><filename>PACKAGE_EXCLUDE</filename></link>
+                    variables for related information.
+                </para>
+            </glossdef>
+        </glossentry>
     </glossdiv>
 
     <glossdiv id='var-glossary-o'><title>O</title>
@@ -3211,6 +3352,28 @@ recipes-graphics/xorg-font/font-alias_1.0.3.bb:PR = "${INC_PR}.3"
                     <note>Konsole support only works for KDE 3.x.
                         Also, "auto" is the default behavior for
                         <filename>OE_TERMINAL</filename></note>
+                </para>
+            </glossdef>
+        </glossentry>
+
+        <glossentry id='var-OEROOT'><glossterm>OEROOT</glossterm>
+            <glossdef>
+                <para>
+                    The directory from which the top-level build environment
+                    setup script is sourced.
+                    The Yocto Project makes two top-level build environment
+                    setup scripts available: 
+                    <link linkend='structure-core-script'><filename>&OE_INIT_FILE;</filename></link>
+                    and 
+                    <link linkend='structure-memres-core-script'><filename>oe-init-build-env-memres</filename></link>.
+                    When you run one of these scripts, the 
+                    <filename>OEROOT</filename> variable resolves to the 
+                    directory that holds the script.
+                </para>
+
+                <para>
+                    For additional information on how this variable is used, 
+                    see the initialization scripts.
                 </para>
             </glossdef>
         </glossentry>
@@ -3292,6 +3455,51 @@ recipes-graphics/xorg-font/font-alias_1.0.3.bb:PR = "${INC_PR}.3"
                     package manager use, see
                     <link linkend='ref-classes-package'>Packaging - <filename>package*.bbclass</filename></link>
                     in this manual.
+                </para>
+            </glossdef>
+        </glossentry>
+
+        <glossentry id='var-PACKAGE_EXCLUDE'><glossterm>PACKAGE_EXCLUDE</glossterm>
+            <glossdef>
+                <para>
+                    Lists packages that should not be installed into an image.
+                    For example:
+                    <literallayout class='monospaced'>
+     PACKAGE_EXCLUDE = "&lt;package_name&gt; &lt;package_name&gt; &lt;package_name&gt; ..."
+                    </literallayout>
+                    You can set this variable globally in your
+                    <filename>local.conf</filename> file or you can attach it to
+                    a specific image recipe by using the recipe name override:
+                    <literallayout class='monospaced'>
+     PACKAGE_EXCLUDE_pn-&lt;target_image&gt; = "&lt;package_name&gt;"
+                    </literallayout>
+                </para>
+
+                <para>
+                    If you choose to not install
+                    a package using this variable and some other package is
+                    dependent on it (i.e. listed in a recipe's
+                    <link linkend='var-RDEPENDS'><filename>RDEPENDS</filename></link>
+                    variable), the OpenEmbedded build system generates a fatal
+                    installation error.
+                    Because the build system halts the process with a fatal
+                    error, you can use the variable with an iterative
+                    development process to remove specific components from a
+                    system.
+                </para>
+
+                <para>
+                    Support for this variable exists only when using the
+                    IPK and RPM packaging backend.
+                    Support does not exist for DEB.
+                </para>
+
+                <para>
+                    See the
+                    <link linkend='var-NO_RECOMMENDATIONS'><filename>NO_RECOMMENDATIONS</filename></link>
+                    and the
+                    <link linkend='var-BAD_RECOMMENDATIONS'><filename>BAD_RECOMMENDATIONS</filename></link>
+                    variables for related information.
                 </para>
             </glossdef>
         </glossentry>
@@ -3464,6 +3672,18 @@ recipes-graphics/xorg-font/font-alias_1.0.3.bb:PR = "${INC_PR}.3"
             </glossdef>
         </glossentry>
 
+        <glossentry id='var-PE'><glossterm>PE</glossterm>
+            <glossdef>
+                <para>
+                    the epoch of the recipe.
+                    By default, this variable is unset.
+                    The field is used to make upgrades possible when the
+                    versioning scheme changes in some backwards incompatible
+                    way.
+                </para>
+            </glossdef>
+        </glossentry>
+
         <glossentry id='var-PF'><glossterm>PF</glossterm>
             <glossdef>
                 <para>Specifies the recipe or package name and includes all version and revision
@@ -3575,6 +3795,46 @@ recipes-graphics/xorg-font/font-alias_1.0.3.bb:PR = "${INC_PR}.3"
             </glossdef>
         </glossentry>
 
+        <glossentry id='var-PREFERRED_PROVIDER'><glossterm>PREFERRED_PROVIDER</glossterm>
+            <glossdef>
+                <para>
+                    If multiple recipes provide an item, this variable
+                    determines which recipe should be given preference.
+                    You should always suffix the variable with the name of the
+                    provided item, and you should set it to the
+                    <link linkend='var-PN'><filename>PN</filename></link>
+                    of the recipe to which you want to give precedence.
+                    Here is an example:
+                    <literallayout class='monospaced'>
+     PREFERRED_PROVIDER_virtual/xserver = "xserver-xf86"
+                    </literallayout>
+                </para>
+            </glossdef>
+        </glossentry>
+
+        <glossentry id='var-PREFERRED_VERSION'><glossterm>PREFERRED_VERSION</glossterm>
+            <glossdef>
+                <para>
+                    If there are multiple versions of recipes available, this
+                    variable determines which recipe should be given preference.
+                    You must always suffix the variable with the
+                    <link linkend='var-PN'><filename>PN</filename></link>
+                    you want to select, and you should set to the
+                    <link linkend='var-PV'><filename>PV</filename></link>
+                    accordingly for precedence.
+                    You can use the "<filename>%</filename>" character as a
+                    wildcard to match any number of characters, which can be
+                    useful when specifying versions that contain long revision
+                    numbers that could potentially change.
+                    Here are two examples:
+                    <literallayout class='monospaced'>
+     PREFERRED_VERSION_python = "2.6.6"
+     PREFERRED_VERSION_linux-yocto = "3.0+git%"
+                    </literallayout>
+                </para>
+            </glossdef>
+        </glossentry>
+
         <glossentry id='var-PREMIRRORS'><glossterm>PREMIRRORS</glossterm>
             <glossdef>
                 <para>
@@ -3672,57 +3932,6 @@ recipes-graphics/xorg-font/font-alias_1.0.3.bb:PR = "${INC_PR}.3"
             </glossdef>
         </glossentry>
 
-        <glossentry id='var-PE'><glossterm>PE</glossterm>
-            <glossdef>
-                <para>
-                    the epoch of the recipe.
-                    The default value is "0".
-                    The field is used to make upgrades possible when the versioning scheme changes in
-                    some backwards incompatible way.
-                </para>
-            </glossdef>
-        </glossentry>
-
-        <glossentry id='var-PREFERRED_PROVIDER'><glossterm>PREFERRED_PROVIDER</glossterm>
-            <glossdef>
-                <para>
-                    If multiple recipes provide an item, this variable
-                    determines which recipe should be given preference.
-                    You should always suffix the variable with the name of the
-                    provided item, and you should set it to the
-                    <link linkend='var-PN'><filename>PN</filename></link>
-                    of the recipe to which you want to give precedence.
-                    Here is an example:
-                    <literallayout class='monospaced'>
-     PREFERRED_PROVIDER_virtual/xserver = "xserver-xf86"
-                    </literallayout>
-                </para>
-            </glossdef>
-        </glossentry>
-
-        <glossentry id='var-PREFERRED_VERSION'><glossterm>PREFERRED_VERSION</glossterm>
-            <glossdef>
-                <para>
-                    If there are multiple versions of recipes available, this
-                    variable determines which recipe should be given preference.
-                    You must always suffix the variable with the
-                    <link linkend='var-PN'><filename>PN</filename></link>
-                    you want to select, and you should set to the
-                    <link linkend='var-PV'><filename>PV</filename></link>
-                    accordingly for precedence.
-                    You can use the "<filename>%</filename>" character as a
-                    wildcard to match any number of characters, which can be
-                    useful when specifying versions that contain long revision
-                    numbers that could potentially change.
-                    Here are two examples:
-                    <literallayout class='monospaced'>
-     PREFERRED_VERSION_python = "2.6.6"
-     PREFERRED_VERSION_linux-yocto = "3.0+git%"
-                    </literallayout>
-                </para>
-            </glossdef>
-        </glossentry>
-
     </glossdiv>
 
 <!--            <glossdiv id='var-glossary-q'><title>Q</title>-->
@@ -3749,11 +3958,34 @@ recipes-graphics/xorg-font/font-alias_1.0.3.bb:PR = "${INC_PR}.3"
         <glossentry id='var-RDEPENDS'><glossterm>RDEPENDS</glossterm>
             <glossdef>
                 <para>
-                    Lists a package's run-time dependencies (i.e. other packages)
+                    Lists a package's runtime dependencies (i.e. other packages)
                     that must be installed in order for the built package to run
                     correctly.
                     If a package in this list cannot be found during the build,
                     you will get a build error.
+                </para>
+
+                <para>
+                    When you use the <filename>RDEPENDS</filename> variable
+                    in a recipe, you are essentially stating that the recipe's
+                    <filename>do_build</filename> task depends on the existence
+                    of a specific package.
+                    Consider this simple example for two recipes named "a" and
+                    "b" that produce similarly named packages.
+                    In this example, the <filename>RDEPENDS</filename>
+                    statement appears in the "a" recipe:
+                    <literallayout class='monospaced'>
+     RDEPENDS_${PN} = "b"
+                    </literallayout>
+                    Here, the dependency is such that the
+                    <filename>do_build</filename> task for recipe "a" depends
+                    on the <filename>do_package_write</filename> task
+                    of recipe "b".
+                    This means the package file for "b" must be available when
+                    the output for recipe "a" has been completely built.
+                    More importantly, package "a" will be marked as depending
+                    on package "b" in a manner that is understood by the
+                    package manager in use (i.e. rpm, opkg, or dpkg).
                 </para>
 
                 <para>
@@ -3798,25 +4030,31 @@ recipes-graphics/xorg-font/font-alias_1.0.3.bb:PR = "${INC_PR}.3"
 
                 <para>
                     In many cases you do not need to explicitly add
-                    run-time dependencies using
+                    runtime dependencies using
                     <filename>RDEPENDS</filename> since some automatic
                     handling occurs:
                     <itemizedlist>
                         <listitem><para><emphasis><filename>shlibdeps</filename></emphasis>:  If
-                            a run-time package contains a shared library
+                            a runtime package contains a shared library
                             (<filename>.so</filename>), the build
                             processes the library in order to determine other
                             libraries to which it is dynamically linked.
                             The build process adds these libraries to
-                            <filename>RDEPENDS</filename> when creating the run-time
+                            <filename>RDEPENDS</filename> when creating the runtime
                             package.</para></listitem>
                         <listitem><para><emphasis><filename>pcdeps</filename></emphasis>:  If
                             the package ships a <filename>pkg-config</filename>
                             information file, the build process uses this file
                             to add items to the <filename>RDEPENDS</filename>
-                            variable to create the run-time packages.
+                            variable to create the runtime packages.
                             </para></listitem>
                     </itemizedlist>
+                </para>
+
+                <para>
+                    For information on build-time dependencies, see the
+                    <link linkend='var-DEPENDS'><filename>DEPENDS</filename></link>
+                    variable.
                 </para>
             </glossdef>
         </glossentry>
@@ -3878,27 +4116,43 @@ recipes-graphics/xorg-font/font-alias_1.0.3.bb:PR = "${INC_PR}.3"
         <glossentry id='var-RRECOMMENDS'><glossterm>RRECOMMENDS</glossterm>
             <glossdef>
                 <para>
-                    A list of packages that extends the usability of a package being
-                    built.
-                    The package being built does not depend on this list of packages in
-                    order to successfully build, but needs them for the extended usability.
+                    A list of packages that extends the usability of a package
+                    being built.
+                    The package being built does not depend on this list of
+                    packages in order to successfully build, but needs them for
+                    the extended usability.
                     To specify runtime dependencies for packages, see the
-                    <filename><link linkend='var-RDEPENDS'>RDEPENDS</link></filename> variable.
+                    <filename><link linkend='var-RDEPENDS'>RDEPENDS</link></filename>
+                    variable.
                 </para>
+
                 <para>
-                    The OpenEmbedded build process automatically installs the list of packages
-                    as part of the built package.
-                    However, you can remove them later if you want.
-                    If, during the build, a package from the list cannot be found, the build
-                    process continues without an error.
+                    The OpenEmbedded build process automatically installs the
+                    list of packages as part of the built package.
+                    However, you can remove these packages later if you want.
+                    If, during the build, a package from the
+                    <filename>RRECOMMENDS</filename> list cannot be
+                    found, the build process continues without an error.
                 </para>
+
                 <para>
-                    Because the <filename>RRECOMMENDS</filename> variable applies to packages
-                    being built, you should
-                    always attach an override to the variable to specify the particular package
-                    whose usability is being extended.
-                    For example, suppose you are building a development package that is extended
-                    to support wireless functionality.
+                    You can also prevent packages in the list from being
+                    installed by using several variables.
+                    See the
+                    <link linkend='var-BAD_RECOMMENDATIONS'><filename>BAD_RECOMMENDATIONS</filename></link>,
+                    <link linkend='var-NO_RECOMMENDATIONS'><filename>NO_RECOMMENDATIONS</filename></link>,
+                    and
+                    <link linkend='var-PACKAGE_EXCLUDE'><filename>PACKAGE_EXCLUDE</filename></link>
+                    variables for more information.
+                </para>
+
+                <para>
+                    Because the <filename>RRECOMMENDS</filename> variable
+                    applies to packages being built, you should always attach
+                    an override to the variable to specify the particular
+                    package whose usability is being extended.
+                    For example, suppose you are building a development package
+                    that is extended to support wireless functionality.
                     In this case, you would use the following:
                     <literallayout class='monospaced'>
      RRECOMMENDS_${PN}-dev += "&lt;wireless_package_name&gt;"
@@ -3906,8 +4160,9 @@ recipes-graphics/xorg-font/font-alias_1.0.3.bb:PR = "${INC_PR}.3"
                     In the example, the package name
                     (<filename>${<link linkend='var-PN'>PN</link>}-dev</filename>)
                     must appear as it would in the
-                    <filename><link linkend='var-PACKAGES'>PACKAGES</link></filename> namespace before any
-                    renaming of the output package by classes like <filename>debian.bbclass</filename>.
+                    <filename><link linkend='var-PACKAGES'>PACKAGES</link></filename>
+                    namespace before any renaming of the output package by
+                    classes such as <filename>debian.bbclass</filename>.
                 </para>
             </glossdef>
         </glossentry>

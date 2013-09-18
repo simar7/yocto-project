@@ -61,7 +61,7 @@ class CollectionError(bb.BBHandledException):
     """
 
 class state:
-    initial, parsing, running, shutdown, stop = range(5)
+    initial, parsing, running, shutdown, forceshutdown, stopped = range(6)
 
 
 class SkippedPackage:
@@ -93,22 +93,6 @@ class BBCooker:
 
         self.configuration = configuration
 
-        self.caches_array = []
-
-        caches_name_array = ['bb.cache:CoreRecipeInfo'] + configuration.extra_caches
-
-        # At least CoreRecipeInfo will be loaded, so caches_array will never be empty!
-        # This is the entry point, no further check needed!
-        for var in caches_name_array:
-            try:
-                module_name, cache_name = var.split(':')
-                module = __import__(module_name, fromlist=(cache_name,))
-                self.caches_array.append(getattr(module, cache_name)) 
-            except ImportError as exc:
-                logger.critical("Unable to import extra RecipeInfo '%s' from '%s': %s" % (cache_name, module_name, exc))
-                sys.exit("FATAL: Failed to import extra cache class '%s'." % cache_name)
-
-        self.data = None
         self.loadConfigurationData()
 
         # Take a lock so only one copy of bitbake can run against a given build
@@ -117,13 +101,6 @@ class BBCooker:
         self.lock = bb.utils.lockfile(lockfile, False, False)
         if not self.lock:
             bb.fatal("Only one copy of bitbake should be run against a build directory")
-
-        #
-        # Special updated configuration we use for firing events
-        #
-        self.event_data = bb.data.createCopy(self.data)
-        bb.data.update_data(self.event_data)
-        bb.parse.init_parser(self.event_data)
 
         # TOSTOP must not be set or our children will hang when they output
         fd = sys.stdout.fileno()
@@ -141,11 +118,24 @@ class BBCooker:
         self.parser = None
 
     def initConfigurationData(self):
-        worker = False
-        if not self.configuration.server_register_idlecallback:
-            worker = True
 
-        self.databuilder = bb.cookerdata.CookerDataBuilder(self.configuration, worker)
+        self.state = state.initial
+
+        self.caches_array = []
+        caches_name_array = ['bb.cache:CoreRecipeInfo'] + self.configuration.extra_caches
+
+        # At least CoreRecipeInfo will be loaded, so caches_array will never be empty!
+        # This is the entry point, no further check needed!
+        for var in caches_name_array:
+            try:
+                module_name, cache_name = var.split(':')
+                module = __import__(module_name, fromlist=(cache_name,))
+                self.caches_array.append(getattr(module, cache_name)) 
+            except ImportError as exc:
+                logger.critical("Unable to import extra RecipeInfo '%s' from '%s': %s" % (cache_name, module_name, exc))
+                sys.exit("FATAL: Failed to import extra cache class '%s'." % cache_name)
+
+        self.databuilder = bb.cookerdata.CookerDataBuilder(self.configuration, False)
         self.data = self.databuilder.data
 
     def enableDataTracking(self):
@@ -161,6 +151,13 @@ class BBCooker:
         self.databuilder.parseBaseConfiguration()
         self.data = self.databuilder.data
         self.data_hash = self.databuilder.data_hash
+
+        #
+        # Special updated configuration we use for firing events
+        #
+        self.event_data = bb.data.createCopy(self.data)
+        bb.data.update_data(self.event_data)
+        bb.parse.init_parser(self.event_data)
 
     def modifyConfigurationVar(self, var, val, default_file, op):
         if op == "append":
@@ -348,13 +345,7 @@ class BBCooker:
             if pkgs_to_build[0] in set(ignore.split()):
                 bb.fatal("%s is in ASSUME_PROVIDED" % pkgs_to_build[0])
 
-            localdata = data.createCopy(self.data)
-            bb.data.update_data(localdata)
-            bb.data.expandKeys(localdata)
-
-            taskdata = bb.taskdata.TaskData(self.configuration.abort)
-            taskdata.add_provider(localdata, self.recipecache, pkgs_to_build[0])
-            taskdata.add_unresolved(localdata, self.recipecache)
+            taskdata, runlist, pkgs_to_build = self.buildTaskData(pkgs_to_build, None, self.configuration.abort)
 
             targetid = taskdata.getbuild_id(pkgs_to_build[0])
             fnid = taskdata.build_targets[targetid][0]
@@ -386,34 +377,44 @@ class BBCooker:
             if data.getVarFlag( e, 'python', envdata ):
                 logger.plain("\npython %s () {\n%s}\n", e, data.getVar(e, envdata, 1))
 
-    def prepareTreeData(self, pkgs_to_build, task):
+
+    def buildTaskData(self, pkgs_to_build, task, abort):
         """
         Prepare a runqueue and taskdata object for iteration over pkgs_to_build
         """
         bb.event.fire(bb.event.TreeDataPreparationStarted(), self.data)
 
-        # If we are told to do the None task then query the default task
-        if (task == None):
+        # A task of None means use the default task
+        if task is None:
             task = self.configuration.cmd
 
-        pkgs_to_build = self.checkPackages(pkgs_to_build)
+        fulltargetlist = self.checkPackages(pkgs_to_build)
 
         localdata = data.createCopy(self.data)
         bb.data.update_data(localdata)
         bb.data.expandKeys(localdata)
+        taskdata = bb.taskdata.TaskData(abort, skiplist=self.skiplist)
+
+        current = 0
+        runlist = []
+        for k in fulltargetlist:
+            taskdata.add_provider(localdata, self.recipecache, k)
+            current += 1
+            runlist.append([k, "do_%s" % task])
+            bb.event.fire(bb.event.TreeDataPreparationProgress(current, len(fulltargetlist)), self.data)
+        taskdata.add_unresolved(localdata, self.recipecache)
+        bb.event.fire(bb.event.TreeDataPreparationCompleted(len(fulltargetlist)), self.data)
+        return taskdata, runlist, fulltargetlist
+
+    def prepareTreeData(self, pkgs_to_build, task):
+        """
+        Prepare a runqueue and taskdata object for iteration over pkgs_to_build
+        """
+
         # We set abort to False here to prevent unbuildable targets raising
         # an exception when we're just generating data
-        taskdata = bb.taskdata.TaskData(False, skiplist=self.skiplist)
+        taskdata, runlist, pkgs_to_build = self.buildTaskData(pkgs_to_build, task, False)
 
-        runlist = []
-        current = 0
-        for k in pkgs_to_build:
-            taskdata.add_provider(localdata, self.recipecache, k)
-            runlist.append([k, "do_%s" % task])
-            current += 1
-            bb.event.fire(bb.event.TreeDataPreparationProgress(current, len(pkgs_to_build)), self.data)
-        taskdata.add_unresolved(localdata, self.recipecache)
-        bb.event.fire(bb.event.TreeDataPreparationCompleted(len(pkgs_to_build)), self.data)
         return runlist, taskdata
     
     ######## WARNING : this function requires cache_extra to be enabled ########
@@ -1047,7 +1048,7 @@ class BBCooker:
 
         def buildFileIdle(server, rq, abort):
 
-            if abort or self.state == state.stop:
+            if abort or self.state == state.forceshutdown:
                 rq.finish_runqueue(True)
             elif self.state == state.shutdown:
                 rq.finish_runqueue(False)
@@ -1076,15 +1077,8 @@ class BBCooker:
         Attempt to build the targets specified
         """
 
-        # If we are told to do the NULL task then query the default task
-        if (task == None):
-            task = self.configuration.cmd
-
-        universe = ('universe' in targets)
-        targets = self.checkPackages(targets)
-
         def buildTargetsIdle(server, rq, abort):
-            if abort or self.state == state.stop:
+            if abort or self.state == state.forceshutdown:
                 rq.finish_runqueue(True)
             elif self.state == state.shutdown:
                 rq.finish_runqueue(False)
@@ -1108,23 +1102,13 @@ class BBCooker:
 
         self.buildSetVars()
 
+        taskdata, runlist, fulltargetlist = self.buildTaskData(targets, task, self.configuration.abort)
+
         buildname = self.data.getVar("BUILDNAME")
-        bb.event.fire(bb.event.BuildStarted(buildname, targets), self.data)
-
-        localdata = data.createCopy(self.data)
-        bb.data.update_data(localdata)
-        bb.data.expandKeys(localdata)
-
-        taskdata = bb.taskdata.TaskData(self.configuration.abort, skiplist=self.skiplist)
-
-        runlist = []
-        for k in targets:
-            taskdata.add_provider(localdata, self.recipecache, k)
-            runlist.append([k, "do_%s" % task])
-        taskdata.add_unresolved(localdata, self.recipecache)
+        bb.event.fire(bb.event.BuildStarted(buildname, fulltargetlist), self.data)
 
         rq = bb.runqueue.RunQueue(self, self.data, self.recipecache, taskdata, runlist)
-        if universe:
+        if 'universe' in targets:
             rq.rqdata.warn_multi_bb = True
 
         self.configuration.server_register_idlecallback(buildTargetsIdle, rq)
@@ -1173,9 +1157,9 @@ class BBCooker:
         if self.state == state.running:
             return
 
-        if self.state in (state.shutdown, state.stop):
+        if self.state in (state.shutdown, state.forceshutdown):
             self.parser.shutdown(clean=False, force = True)
-            sys.exit(1)
+            raise bb.BBHandledException()
 
         if self.state != state.parsing:
             self.parseConfiguration ()
@@ -1197,7 +1181,7 @@ class BBCooker:
         if not self.parser.parse_next():
             collectlog.debug(1, "parsing complete")
             if self.parser.error:
-                sys.exit(1)
+                raise bb.BBHandledException()
             self.show_appends_with_no_recipes()
             self.handlePrefProviders()
             self.recipecache.bbfile_priority = self.collection.collection_priorities(self.recipecache.pkg_fn)
@@ -1243,18 +1227,19 @@ class BBCooker:
         prserv.serv.auto_shutdown(self.data)
         bb.event.fire(CookerExit(), self.event_data)
 
-    def shutdown(self):
-        self.state = state.shutdown
+    def shutdown(self, force = False):
+        if force:
+            self.state = state.forceshutdown
+        else:
+            self.state = state.shutdown
 
-    def stop(self):
-        self.state = state.stop
+    def finishcommand(self):
+        self.state = state.initial
 
     def initialize(self):
-        self.state = state.initial
         self.initConfigurationData()
 
     def reset(self):
-        self.state = state.initial
         self.loadConfigurationData()
 
 def server_main(cooker, func, *args):
@@ -1482,7 +1467,7 @@ class Feeder(multiprocessing.Process):
                 continue
 
 class Parser(multiprocessing.Process):
-    def __init__(self, jobs, results, quit, init):
+    def __init__(self, jobs, results, quit, init, profile):
         self.jobs = jobs
         self.results = results
         self.quit = quit
@@ -1490,8 +1475,28 @@ class Parser(multiprocessing.Process):
         multiprocessing.Process.__init__(self)
         self.context = bb.utils.get_context().copy()
         self.handlers = bb.event.get_class_handlers().copy()
+        self.profile = profile
 
     def run(self):
+
+        if not self.profile:
+            self.realrun()
+            return
+
+        try:
+            import cProfile as profile
+        except:
+            import profile
+        prof = profile.Profile()
+        try:
+            profile.Profile.runcall(prof, self.realrun)
+        finally:
+            logfile = "profile-parse-%s.log" % multiprocessing.current_process().name
+            prof.dump_stats(logfile)
+            bb.utils.process_profilelog(logfile)
+            print("Raw profiling information saved to %s and processed statistics to %s.processed" % (logfile, logfile))
+
+    def realrun(self):
         if self.init:
             self.init()
 
@@ -1592,7 +1597,7 @@ class CookerParser(object):
             self.feeder = Feeder(self.willparse, self.jobs, self.feeder_quit)
             self.feeder.start()
             for i in range(0, self.num_processes):
-                parser = Parser(self.jobs, self.result_queue, self.parser_quit, init)
+                parser = Parser(self.jobs, self.result_queue, self.parser_quit, init, self.cooker.configuration.profile)
                 parser.start()
                 self.processes.append(parser)
 

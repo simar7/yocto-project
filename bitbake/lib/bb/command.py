@@ -117,14 +117,14 @@ class Command:
             return False
 
     def finishAsyncCommand(self, msg=None, code=None):
-        if msg:
+        if msg or msg == "":
             bb.event.fire(CommandFailed(msg), self.cooker.event_data)
         elif code:
             bb.event.fire(CommandExit(code), self.cooker.event_data)
         else:
             bb.event.fire(CommandCompleted(), self.cooker.event_data)
         self.currentAsyncCommand = None
-
+        self.cooker.finishcommand()
 
 class CommandsSync:
     """
@@ -137,13 +137,13 @@ class CommandsSync:
         """
         Trigger cooker 'shutdown' mode
         """
-        command.cooker.shutdown()
+        command.cooker.shutdown(False)
 
-    def stateStop(self, command, params):
+    def stateForceShutdown(self, command, params):
         """
         Stop the cooker
         """
-        command.cooker.stop()
+        command.cooker.shutdown(True)
 
     def getVariable(self, command, params):
         """

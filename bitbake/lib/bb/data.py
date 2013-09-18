@@ -59,7 +59,7 @@ def init():
 def init_db(parent = None):
     """Return a new object representing the Bitbake data,
     optionally based on an existing object"""
-    if parent:
+    if parent is not None:
         return parent.createCopy()
     else:
         return _dict_type()
@@ -148,7 +148,7 @@ def expandKeys(alterdata, readdata = None):
         readdata = alterdata
 
     todolist = {}
-    for key in keys(alterdata):
+    for key in alterdata:
         if not '${' in key:
             continue
 
@@ -285,20 +285,24 @@ def update_data(d):
     """Performs final steps upon the datastore, including application of overrides"""
     d.finalize(parent = True)
 
-def build_dependencies(key, keys, shelldeps, vardepvals, d):
+def build_dependencies(key, keys, shelldeps, varflagsexcl, d):
     deps = set()
-    vardeps = d.getVarFlag(key, "vardeps", True)
     try:
         if key[-1] == ']':
             vf = key[:-1].split('[')
             value = d.getVarFlag(vf[0], vf[1], False)
-        else:
-            value = d.getVar(key, False)
+            parser = d.expandWithRefs(value, key)
+            deps |= parser.references
+            deps = deps | (keys & parser.execs)
+            return deps, value
+        varflags = d.getVarFlags(key, ["vardeps", "vardepvalue", "vardepsexclude"]) or {}
+        vardeps = varflags.get("vardeps")
+        value = d.getVar(key, False)
 
-        if key in vardepvals:
-           value =  d.getVarFlag(key, "vardepvalue", True)
-        elif d.getVarFlag(key, "func"):
-            if d.getVarFlag(key, "python"):
+        if "vardepvalue" in varflags:
+           value = varflags.get("vardepvalue")
+        elif varflags.get("func"):
+            if varflags.get("python"):
                 parsedvar = d.expandWithRefs(value, key)
                 parser = bb.codeparser.PythonParser(key, logger)
                 if parsedvar.value and "\t" in parsedvar.value:
@@ -320,19 +324,16 @@ def build_dependencies(key, keys, shelldeps, vardepvals, d):
             deps = deps | (keys & parser.execs)
 
         # Add varflags, assuming an exclusion list is set
-        varflagsexcl = d.getVar('BB_SIGNATURE_EXCLUDE_FLAGS', True)
         if varflagsexcl:
             varfdeps = []
-            varflags = d.getVarFlags(key)
-            if varflags:
-                for f in varflags:
-                    if f not in varflagsexcl:
-                        varfdeps.append('%s[%s]' % (key, f))
+            for f in varflags:
+                if f not in varflagsexcl:
+                    varfdeps.append('%s[%s]' % (key, f))
             if varfdeps:
                 deps |= set(varfdeps)
 
         deps |= set((vardeps or "").split())
-        deps -= set((d.getVarFlag(key, "vardepsexclude", True) or "").split())
+        deps -= set(varflags.get("vardepsexclude", "").split())
     except Exception as e:
         raise bb.data_smart.ExpansionError(key, None, e)
     return deps, value
@@ -341,16 +342,16 @@ def build_dependencies(key, keys, shelldeps, vardepvals, d):
 
 def generate_dependencies(d):
 
-    keys = set(key for key in d.keys() if not key.startswith("__"))
-    shelldeps = set(key for key in keys if d.getVarFlag(key, "export") and not d.getVarFlag(key, "unexport"))
-    vardepvals = set(key for key in keys if d.getVarFlag(key, "vardepvalue"))
+    keys = set(key for key in d if not key.startswith("__"))
+    shelldeps = set(key for key in d.getVar("__exportlist", False) if d.getVarFlag(key, "export") and not d.getVarFlag(key, "unexport"))
+    varflagsexcl = d.getVar('BB_SIGNATURE_EXCLUDE_FLAGS', True)
 
     deps = {}
     values = {}
 
     tasklist = d.getVar('__BBTASKS') or []
     for task in tasklist:
-        deps[task], values[task] = build_dependencies(task, keys, shelldeps, vardepvals, d)
+        deps[task], values[task] = build_dependencies(task, keys, shelldeps, varflagsexcl, d)
         newdeps = deps[task]
         seen = set()
         while newdeps:
@@ -359,7 +360,7 @@ def generate_dependencies(d):
             newdeps = set()
             for dep in nextdeps:
                 if dep not in deps:
-                    deps[dep], values[dep] = build_dependencies(dep, keys, shelldeps, vardepvals, d)
+                    deps[dep], values[dep] = build_dependencies(dep, keys, shelldeps, varflagsexcl, d)
                 newdeps |=  deps[dep]
             newdeps -= seen
         #print "For %s: %s" % (task, str(deps[task]))
