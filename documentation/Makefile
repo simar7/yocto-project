@@ -200,7 +200,8 @@ TARFILES = mega-manual.html mega-style.css figures/yocto-environment.png figures
 	figures/yocto-environment-ref.png figures/user-configuration.png figures/source-input.png \
 	figures/package-feeds.png figures/layer-input.png figures/images.png figures/sdk.png \
 	figures/source-fetching.png figures/patching.png figures/configuration-compile-autoreconf.png \
-	figures/analysis-for-package-splitting.png
+	figures/analysis-for-package-splitting.png figures/image-generation.png \
+	figures/sdk-generation.png
 	endif
 
 MANUALS = $(DOC)/$(DOC).html
@@ -219,7 +220,8 @@ TARFILES = ref-manual.html ref-style.css figures/poky-title.png \
 	figures/user-configuration.png figures/yocto-environment-ref.png \
 	figures/images.png figures/sdk.png figures/source-fetching.png \
 	figures/patching.png figures/configuration-compile-autoreconf.png \
-	figures/analysis-for-package-splitting.png
+	figures/analysis-for-package-splitting.png figures/image-generation.png \
+	figures/sdk-generation.png
 MANUALS = $(DOC)/$(DOC).html $(DOC)/$(DOC).pdf $(DOC)/eclipse
 FIGURES = figures
 STYLESHEET = $(DOC)/*.css
@@ -381,8 +383,8 @@ publish:
             echo " "; \
             echo "******** Publishing "$(DOC)".html"; \
             echo " "; \
-            scp -r $(MANUALS) $(STYLESHEET) www.yoctoproject.org:/srv/www/www.yoctoproject.org-docs/$(VER)/$(DOC); \
-            cd $(DOC); scp -r $(FIGURES) www.yoctoproject.org:/srv/www/www.yoctoproject.org-docs/$(VER)/$(DOC); \
+            scp -r $(MANUALS) $(STYLESHEET) docs.yp:/var/www/www.yoctoproject.org-docs/$(VER)/$(DOC); \
+            cd $(DOC); scp -r $(FIGURES) docs.yp:/var/www/www.yoctoproject.org-docs/$(VER)/$(DOC); \
 	else \
           echo " "; \
           echo $(DOC)".html missing.  Generate the file first then try again."; \

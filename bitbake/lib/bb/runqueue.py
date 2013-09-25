@@ -217,6 +217,15 @@ class RunQueueData:
             ret.extend([nam])
         return ret
 
+    def get_task_name(self, task):
+        return self.runq_task[task]
+
+    def get_task_file(self, task):
+        return self.taskData.fn_index[self.runq_fnid[task]]
+
+    def get_task_hash(self, task):
+        return self.runq_hash[task]
+
     def get_user_idstring(self, task, task_name_suffix = ""):
         fn = self.taskData.fn_index[self.runq_fnid[task]]
         taskname = self.runq_task[task] + task_name_suffix
@@ -998,6 +1007,11 @@ class RunQueue:
                 self.state = runQueueComplete
             else:
                 self.state = runQueueSceneInit
+
+                # we are ready to run, see if any UI client needs the dependency info
+                if bb.cooker.CookerFeatures.SEND_DEPENDS_TREE in self.cooker.featureset:
+                    depgraph = self.cooker.buildDependTree(self, self.rqdata.taskData)
+                    bb.event.fire(bb.event.DepTreeGenerated(depgraph), self.cooker.data)
 
         if self.state is runQueueSceneInit:
             if self.cooker.configuration.dump_signatures:
@@ -1781,6 +1795,9 @@ class runQueueEvent(bb.event.Event):
     def __init__(self, task, stats, rq):
         self.taskid = task
         self.taskstring = rq.rqdata.get_user_idstring(task)
+        self.taskname = rq.rqdata.get_task_name(task)
+        self.taskfile = rq.rqdata.get_task_file(task)
+        self.taskhash = rq.rqdata.get_task_hash(task)
         self.stats = stats.copy()
         bb.event.Event.__init__(self)
 
@@ -1792,6 +1809,9 @@ class sceneQueueEvent(runQueueEvent):
         runQueueEvent.__init__(self, task, stats, rq)
         realtask = rq.rqdata.runq_setscene[task]
         self.taskstring = rq.rqdata.get_user_idstring(realtask, "_setscene")
+        self.taskname = rq.rqdata.get_task_name(realtask) + "_setscene"
+        self.taskfile = rq.rqdata.get_task_file(realtask)
+        self.taskhash = rq.rqdata.get_task_hash(task)
 
 class runQueueTaskStarted(runQueueEvent):
     """

@@ -72,6 +72,8 @@ class TaskBase(event.Event):
     def __init__(self, t, logfile, d):
         self._task = t
         self._package = d.getVar("PF", True)
+        self.taskfile = d.getVar("FILE", True)
+        self.taskname = self._task
         self.logfile = logfile
         event.Event.__init__(self)
         self._message = "recipe %s: task %s: %s" % (d.getVar("PF", True), t, self.getDisplayName())
@@ -343,6 +345,14 @@ def _exec_task(fn, task, d, quieterr):
     tempdir = localdata.getVar('T', True)
     if not tempdir:
         bb.fatal("T variable not set, unable to build")
+
+    # Change nice level if we're asked to
+    nice = localdata.getVar("BB_TASK_NICE_LEVEL", True)
+    if nice:
+        curnice = os.nice(0)
+        nice = int(nice) - curnice
+        newnice = os.nice(nice)
+        logger.debug(1, "Renice to %s " % newnice)
 
     bb.utils.mkdirhier(tempdir)
 

@@ -37,7 +37,8 @@ EXTRA_OECONF = "--with-db-uniquename=_pam \
                 --includedir=${includedir}/security \
                 --libdir=${base_libdir} \
                 --disable-nis \
-                --disable-regenerate-docu"
+                --disable-regenerate-docu \
+		--disable-prelude"
 
 CFLAGS_append = " -fPIC "
 
@@ -102,6 +103,10 @@ do_install() {
 
 	# The lsb requires unix_chkpwd has setuid permission
 	chmod 4755 ${D}${sbindir}/unix_chkpwd
+
+	if ${@base_contains('DISTRO_FEATURES','systemd','true','false',d)}; then
+		echo "session optional pam_systemd.so" >> ${D}${sysconfdir}/pam.d/common-session
+	fi
 }
 
 python do_pam_sanity () {

@@ -24,7 +24,7 @@
        <link linkend='var-FILES'>F</link>
 <!--               <link linkend='var-glossary-g'>G</link> -->
        <link linkend='var-HOMEPAGE'>H</link>
-       <link linkend='var-IMAGE_FEATURES'>I</link>
+       <link linkend='var-IMAGE_CLASSES'>I</link>
 <!--               <link linkend='var-glossary-j'>J</link> -->
        <link linkend='var-KARCH'>K</link>
        <link linkend='var-LAYERDEPENDS'>L</link>
@@ -36,7 +36,7 @@
        <link linkend='var-RCONFLICTS'>R</link>
        <link linkend='var-S'>S</link>
        <link linkend='var-T'>T</link>
-<!--               <link linkend='var-glossary-u'>U</link> -->
+       <link linkend='var-USER_CLASSES'>U</link>
 <!--               <link linkend='var-glossary-v'>V</link> -->
        <link linkend='var-WARN_QA'>W</link>
 <!--               <link linkend='var-glossary-x'>X</link> -->
@@ -493,6 +493,25 @@
             </glossdef>
         </glossentry>
 
+        <glossentry id='var-BB_GENERATE_MIRROR_TARBALLS'><glossterm>BB_GENERATE_MIRROR_TARBALLS</glossterm>
+            <glossdef>
+                <para>
+                    Causes tarballs of the Git repositories to be placed in the
+                    <link linkend='var-DL_DIR'><filename>DL_DIR</filename></link>
+                    directory.
+                    For performance reasons, creating and placing tarballs of
+                    the Git repositories is not the default action by the
+                    OpenEmbedded build system.
+                    <literallayout class='monospaced'>
+     BB_Generate_MIRROR_TARBALLS = "1"
+                    </literallayout>
+                    Set this variable in your <filename>local.conf</filename>
+                    file in the
+                    <ulink url='&YOCTO_DOCS_DEV_URL;#build-directory'>Build Directory</ulink>.
+                </para>
+            </glossdef>
+        </glossentry>
+
         <glossentry id='var-BB_NUMBER_THREADS'><glossterm>BB_NUMBER_THREADS</glossterm>
             <glossdef>
                 <para>The maximum number of tasks BitBake should run in parallel at any one time.
@@ -714,7 +733,7 @@ Core layer for images cannot be removed
             <glossdef>
                 <para>
                     Points to the server that runs memory-resident BitBake.
-                    This variable is set by the 
+                    This variable is set by the
                     <link linkend='structure-memres-core-script'><filename>oe-init-build-env-memres</filename></link>
                     setup script and should not be hand-edited.
                     The variable is only used when you employ memory-resident
@@ -723,10 +742,10 @@ Core layer for images cannot be removed
                     <literallayout class='monospaced'>
      export BBSERVER=localhost:$port
                     </literallayout>
-                    For more information on how the 
-                    <filename>BBSERVER</filename> is used, see the 
+                    For more information on how the
+                    <filename>BBSERVER</filename> is used, see the
                     <filename>oe-init-build-env-memres</filename> script, which
-                    is located in the 
+                    is located in the
                     <ulink url='&YOCTO_DOCS_DEV_URL;#source-directory'>Source Directory</ulink>.
                 </para>
             </glossdef>
@@ -789,9 +808,9 @@ Core layer for images cannot be removed
                     <ulink url='&YOCTO_DOCS_DEV_URL;#build-directory'>Build Directory</ulink>.
                     You can define this directory indirectly through the
                     <link linkend='structure-core-script'><filename>&OE_INIT_FILE;</filename></link>
-                    and 
+                    and
                     <link linkend='structure-memres-core-script'><filename>oe-init-build-env-memres</filename></link>
-                    scripts by passing in a Build Directory path when you run 
+                    scripts by passing in a Build Directory path when you run
                     the scripts.
                     If you run the scripts and do not provide a Build Directory
                     path, the <filename>BUILDDIR</filename> defaults to
@@ -1059,12 +1078,39 @@ Core layer for images cannot be removed
         <glossentry id='var-DEPLOY_DIR'><glossterm>DEPLOY_DIR</glossterm>
             <glossdef>
                 <para>
-                    Points to the area that the OpenEmbedded build system uses
-                    to place images, packages, SDKs and other output
+                    Points to the general area that the OpenEmbedded build
+                    system uses to place images, packages, SDKs and other output
                     files that are ready to be used outside of the build system.
                     By default, this directory resides within the
                     <ulink url='&YOCTO_DOCS_DEV_URL;#build-directory'>Build Directory</ulink>
                     as <filename>tmp/deploy</filename>.
+                </para>
+
+                <para>
+                    For more information on the structure of the Build
+                    Directory, see
+                    "<link linkend='structure-build'>The Build Directory - <filename>build/</filename></link>"
+                    section.
+                    For more detail on the contents of the
+                    <filename>deploy</filename> directory, see the
+                    "<link linkend='images-dev-environment'>Images</link>" and
+                    "<link linkend='sdk-dev-environment'>Application Development SDK</link>"
+                    sections.
+                </para>
+            </glossdef>
+        </glossentry>
+
+        <glossentry id='var-DEPLOY_DIR_IMAGE'><glossterm>DEPLOY_DIR_IMAGE</glossterm>
+            <glossdef>
+                <para>
+                    Points to the area that the OpenEmbedded build system uses
+                    to place images and other associated output files that are
+                    ready to be deployed onto the target machine.
+                    The directory is machine-specific as it contains the
+                    <filename>${MACHINE}</filename> name.
+                    By default, this directory resides within the
+                    <ulink url='&YOCTO_DOCS_DEV_URL;#build-directory'>Build Directory</ulink>
+                    as <filename>tmp/deploy/images/${MACHINE}/</filename>.
                 </para>
 
                 <para>
@@ -1230,39 +1276,49 @@ Core layer for images cannot be removed
         <glossentry id='var-DL_DIR'><glossterm>DL_DIR</glossterm>
             <glossdef>
                 <para>
-                    The central download directory used by the build process to 
+                    The central download directory used by the build process to
                     store downloads.
-                    You can set this directory by defining the 
-                    <filename>DL_DIR</filename> variable in the 
+                    By default, <filename>DL_DIR</filename> gets files
+                    suitable for mirroring for everything except Git
+                    repositories.
+                    If you want tarballs of Git repositories, use the
+                    <link linkend='var-BB_GENERATE_MIRROR_TARBALLS'><filename>BB_GENERATE_MIRROR_TARBALLS</filename></link>
+                    variable.
+                </para>
+
+                <para>
+                    You can set this directory by defining the
+                    <filename>DL_DIR</filename> variable in the
                     <filename>/conf/local.conf</filename> file.
                     This directory is self-maintaining and you should not have
                     to touch it.
-                    By default, the directory is <filename>downloads</filename> 
+                    By default, the directory is <filename>downloads</filename>
                     in the
                     <ulink url='&YOCTO_DOCS_DEV_URL;#build-directory'>Build Directory</ulink>.
                     <literallayout class='monospaced'>
      #DL_DIR ?= "${TOPDIR}/downloads"
                     </literallayout>
-                    To specify a different download directory, simply remove 
+                    To specify a different download directory, simply remove
                     the comment from the line and provide your directory.
                 </para>
 
                 <para>
-                    During a first build, the system downloads many different 
+                    During a first build, the system downloads many different
                     source code tarballs from various upstream projects.
                     Downloading can take a while, particularly if your network
                     connection is slow.
                     Tarballs are all stored in the directory defined by
-                    <filename>DL_DIR</filename> and the build system looks there 
+                    <filename>DL_DIR</filename> and the build system looks there
                     first to find source tarballs.
                     <note>
-                        When wiping and rebuilding, you can preserve this 
-                        directory to speed up this part of subsequent builds.
+                        When wiping and rebuilding, you can preserve this
+                        directory to speed up this part of subsequent
+                        builds.
                     </note>
                 </para>
 
                 <para>
-                    You can safely share this directory between multiple builds 
+                    You can safely share this directory between multiple builds
                     on the same development machine.
                     For additional information on how the build process gets
                     source files when working behind a firewall or proxy server,
@@ -1323,6 +1379,24 @@ Core layer for images cannot be removed
             </glossdef>
         </glossentry>
 
+        <glossentry id='var-EXTENDPE'><glossterm>EXTENDPE</glossterm>
+            <glossdef>
+                <para>
+                    Used with file and pathnames to create a prefix for a recipe's
+                    version based on the recipe's
+                    <link linkend='var-PE'><filename>PE</filename></link> value.
+                    If <filename>PE</filename> is set and greater than zero for a recipe,
+                    <filename>EXTENDPE</filename> becomes that value (e.g if
+                    <filename>PE</filename> is equal to "1" then <filename>EXTENDPE</filename>
+                    becomes "1_").
+                    If a recipe's <filename>PE</filename> is not set (the default) or is equal to
+                    zero, <filename>EXTENDPE</filename> becomes "".</para>
+                    <para>See the <link linkend='var-STAMP'><filename>STAMP</filename></link>
+                    variable for an example.
+                </para>
+            </glossdef>
+        </glossentry>
+
         <glossentry id='var-EXTENDPKGV'><glossterm>EXTENDPKGV</glossterm>
             <glossdef>
                 <para>
@@ -1340,24 +1414,6 @@ Core layer for images cannot be removed
                     The dependency relationships are intended to force the
                     package manager to upgrade these types of packages in
                     lock-step.
-                </para>
-            </glossdef>
-        </glossentry>
-
-        <glossentry id='var-EXTENDPE'><glossterm>EXTENDPE</glossterm>
-            <glossdef>
-                <para>
-                    Used with file and pathnames to create a prefix for a recipe's
-                    version based on the recipe's
-                    <link linkend='var-PE'><filename>PE</filename></link> value.
-                    If <filename>PE</filename> is set and greater than zero for a recipe,
-                    <filename>EXTENDPE</filename> becomes that value (e.g if
-                    <filename>PE</filename> is equal to "1" then <filename>EXTENDPE</filename>
-                    becomes "1_").
-                    If a recipe's <filename>PE</filename> is not set (the default) or is equal to
-                    zero, <filename>EXTENDPE</filename> becomes "".</para>
-                    <para>See the <link linkend='var-STAMP'><filename>STAMP</filename></link>
-                    variable for an example.
                 </para>
             </glossdef>
         </glossentry>
@@ -1798,6 +1854,31 @@ Core layer for images cannot be removed
 
     <glossdiv id='var-glossary-i'><title>I</title>
 
+        <glossentry id='var-IMAGE_CLASSES'><glossterm>IMAGE_CLASSES</glossterm>
+            <glossdef>
+                <para>
+                    A list of classes that all images should inherit.
+                    You typically use this variable to specify the list of
+                    classes that register the different types of images
+                    the OpenEmbedded build system creates.
+                </para>
+
+                <para>
+                    The default value for <filename>IMAGE_CLASSES</filename> is
+                    <filename>image_types</filename>.
+                    You can set this variable in your
+                    <filename>local.conf</filename> or in a distribution
+                    configuration file.
+                </para>
+
+                <para>
+                    For more information, see
+                    <filename>meta/classes/image_types.bbclass</filename> in the
+                    <ulink url='&YOCTO_DOCS_DEV_URL;#source-directory'>Source Directory</ulink>.
+                </para>
+            </glossdef>
+        </glossentry>
+
         <glossentry id='var-IMAGE_FEATURES'><glossterm>IMAGE_FEATURES</glossterm>
             <glossdef>
                 <para>
@@ -1830,7 +1911,7 @@ Core layer for images cannot be removed
         <glossentry id='var-IMAGE_FSTYPES'><glossterm>IMAGE_FSTYPES</glossterm>
             <glossdef>
                 <para>
-                    Specifies the format of the root filesystem created by
+                    Specifies the formats of the root filesystem created by
                     the OpenEmbedded build system.
                     Available formats are a subset of the
                     supported images listed in
@@ -1950,6 +2031,34 @@ Core layer for images cannot be removed
                     to the image by using
                     <filename><link linkend='var-IMAGE_ROOTFS_EXTRA_SPACE'>IMAGE_ROOTFS_EXTRA_SPACE</link></filename>
                     the variable.
+                </para>
+            </glossdef>
+        </glossentry>
+
+        <glossentry id='var-IMAGE_POSTPROCESS_COMMAND'><glossterm>IMAGE_POSTPROCESS_COMMAND</glossterm>
+            <glossdef>
+                <para>
+                    Added by classes to run post processing commands once the
+                    OpenEmbedded build system has created the image.
+                    You can specify shell commands separated by semicolons:
+                    <literallayout class='monospaced'>
+     IMAGE_POSTPROCESS_COMMAND += "&lt;shell_command&gt;; ... "
+                    </literallayout>
+                    If you need to pass the path to the root filesystem within
+                    the command, you can use
+                    <filename>${IMAGE_ROOTFS}</filename>, which points to
+                    the root filesystem image.
+                </para>
+            </glossdef>
+        </glossentry>
+
+        <glossentry id='var-IMAGE_ROOTFS'><glossterm>IMAGE_ROOTFS</glossterm>
+            <glossdef>
+                <para>
+                    The location of the root filesystem while it is under
+                    construction (i.e. during <filename>do_rootfs</filename>).
+                    This variable is not configurable.
+                    Do not change it.
                 </para>
             </glossdef>
         </glossentry>
@@ -2187,6 +2296,18 @@ recipes-graphics/xorg-font/font-alias_1.0.3.bb:PR = "${INC_PR}.3"
             </glossdef>
         </glossentry>
 
+        <glossentry id='var-INITSCRIPT_NAME'><glossterm>INITSCRIPT_NAME</glossterm>
+            <glossdef>
+                <para>
+                    The filename of the initscript as installed to <filename>${etcdir}/init.d</filename>.
+                </para>
+                <para>
+                    This variable is used in recipes when using <filename>update-rc.d.bbclass</filename>.
+                    The variable is Mandatory.
+                </para>
+            </glossdef>
+        </glossentry>
+
         <glossentry id='var-INITSCRIPT_PACKAGES'><glossterm>INITSCRIPT_PACKAGES</glossterm>
             <glossdef>
                 <para>
@@ -2199,18 +2320,6 @@ recipes-graphics/xorg-font/font-alias_1.0.3.bb:PR = "${INC_PR}.3"
                     <link linkend='var-PN'><filename>PN</filename></link> variable.
                 </para>
            </glossdef>
-        </glossentry>
-
-        <glossentry id='var-INITSCRIPT_NAME'><glossterm>INITSCRIPT_NAME</glossterm>
-            <glossdef>
-                <para>
-                    The filename of the initscript as installed to <filename>${etcdir}/init.d</filename>.
-                </para>
-                <para>
-                    This variable is used in recipes when using <filename>update-rc.d.bbclass</filename>.
-                    The variable is Mandatory.
-                </para>
-            </glossdef>
         </glossentry>
 
         <glossentry id='var-INITSCRIPT_PARAMS'><glossterm>INITSCRIPT_PARAMS</glossterm>
@@ -3362,17 +3471,17 @@ recipes-graphics/xorg-font/font-alias_1.0.3.bb:PR = "${INC_PR}.3"
                     The directory from which the top-level build environment
                     setup script is sourced.
                     The Yocto Project makes two top-level build environment
-                    setup scripts available: 
+                    setup scripts available:
                     <link linkend='structure-core-script'><filename>&OE_INIT_FILE;</filename></link>
-                    and 
+                    and
                     <link linkend='structure-memres-core-script'><filename>oe-init-build-env-memres</filename></link>.
-                    When you run one of these scripts, the 
-                    <filename>OEROOT</filename> variable resolves to the 
+                    When you run one of these scripts, the
+                    <filename>OEROOT</filename> variable resolves to the
                     directory that holds the script.
                 </para>
 
                 <para>
-                    For additional information on how this variable is used, 
+                    For additional information on how this variable is used,
                     see the initialization scripts.
                 </para>
             </glossdef>
@@ -3651,11 +3760,37 @@ recipes-graphics/xorg-font/font-alias_1.0.3.bb:PR = "${INC_PR}.3"
             </glossdef>
         </glossentry>
 
+        <glossentry id='var-PATCHRESOLVE'><glossterm>PATCHRESOLVE</glossterm>
+            <glossdef>
+                <para>
+                    Determines the action to take when a patch fails.
+                    You can set this variable to one of two values: "noop" and
+                    "user".
+                </para>
+
+                <para>
+                    The default value of "noop" causes the build to simply fail
+                    when the OpenEmbedded build system cannot successfully
+                    apply a patch.
+                    Setting the value to "user" causes the build system to
+                    launch a shell and places you in the right location so that
+                    you can manually resolve the conflicts.
+                </para>
+
+                <para>
+                    Set this variable in your
+                    <filename>local.conf</filename> file.
+                </para>
+            </glossdef>
+        </glossentry>
+
         <glossentry id='var-PATCHTOOL'><glossterm>PATCHTOOL</glossterm>
             <glossdef>
                 <para>
                     Specifies the utility used to apply patches for a recipe
                     during <filename>do_patch</filename>.
+                    You can specify one of three utilities: "patch", "quilt", or
+                    "git".
                     The default utility used is "quilt" except for the
                     quilt-native recipe itself.
                     Because the quilt tool is not available at the
@@ -3664,9 +3799,11 @@ recipes-graphics/xorg-font/font-alias_1.0.3.bb:PR = "${INC_PR}.3"
 
                 <para>
                     If you wish to use an alternative patching tool, set the
-                    variable in the recipe:
+                    variable in the recipe using one of the following:
                     <literallayout class='monospaced'>
-     PATCHTOOL = "tool-name"
+     PATCHTOOL = "patch"
+     PATCHTOOL = "quilt"
+     PATCHTOOL = "git"
                     </literallayout>
                 </para>
             </glossdef>
@@ -3941,16 +4078,45 @@ recipes-graphics/xorg-font/font-alias_1.0.3.bb:PR = "${INC_PR}.3"
 
         <glossentry id='var-RCONFLICTS'><glossterm>RCONFLICTS</glossterm>
             <glossdef>
-                <para>The list of packages that conflict with another package.
-                    Note that the package will not be installed if the conflicting packages are not
-                    first removed.</para>
                 <para>
-                   Like all package-controlling variables, you must always use them in
-                   conjunction with a package name override.
+                    The list of packages that conflict with packages.
+                    Note that packages will not be installed if conflicting
+                    packages are not first removed.
+                </para>
+
+                <para>
+                   Like all package-controlling variables, you must always use
+                   them in conjunction with a package name override.
                    Here is an example:
                    <literallayout class='monospaced'>
      RCONFLICTS_${PN} = "another-conflicting-package-name"
                    </literallayout>
+                </para>
+
+                <para>
+                    BitBake, which the OpenEmbedded build system uses, supports
+                    specifying versioned dependencies.
+                    Although the syntax varies depending on the packaging
+                    format, BitBake hides these differences from you.
+                    Here is the general syntax to specify versions with
+                    the <filename>RCONFLICTS</filename> variable:
+                    <literallayout class='monospaced'>
+     RCONFLICTS_${PN} = "&lt;package&gt; (&lt;operator&gt; &lt;version&gt;)"
+                    </literallayout>
+                    For <filename>operator</filename>, you can specify the
+                    following:
+                    <literallayout class='monospaced'>
+     =
+     &lt;
+     &gt;
+     &lt;=
+     &gt;=
+                    </literallayout>
+                    For example, the following sets up a dependency on version
+                    1.2 or greater of the package <filename>foo</filename>:
+                    <literallayout class='monospaced'>
+     RCONFLICTS_${PN} = "foo (>= 1.2)"
+                    </literallayout>
                 </para>
             </glossdef>
         </glossentry>
@@ -4052,6 +4218,32 @@ recipes-graphics/xorg-font/font-alias_1.0.3.bb:PR = "${INC_PR}.3"
                 </para>
 
                 <para>
+                    BitBake, which the OpenEmbedded build system uses, supports
+                    specifying versioned dependencies.
+                    Although the syntax varies depending on the packaging
+                    format, BitBake hides these differences from you.
+                    Here is the general syntax to specify versions with
+                    the <filename>RDEPENDS</filename> variable:
+                    <literallayout class='monospaced'>
+     RDEPENDS_${PN} = "&lt;package&gt; (&lt;operator&gt; &lt;version&gt;)"
+                    </literallayout>
+                    For <filename>operator</filename>, you can specify the
+                    following:
+                    <literallayout class='monospaced'>
+     =
+     &lt;
+     &gt;
+     &lt;=
+     &gt;=
+                    </literallayout>
+                    For example, the following sets up a dependency on version
+                    1.2 or greater of the package <filename>foo</filename>:
+                    <literallayout class='monospaced'>
+     RDEPENDS_${PN} = "foo (>= 1.2)"
+                    </literallayout>
+                </para>
+
+                <para>
                     For information on build-time dependencies, see the
                     <link linkend='var-DEPENDS'><filename>DEPENDS</filename></link>
                     variable.
@@ -4085,6 +4277,23 @@ recipes-graphics/xorg-font/font-alias_1.0.3.bb:PR = "${INC_PR}.3"
                     should not be removed.
                     See the "<link linkend='ref-classes-rm-work'>Removing Work Files During the Build - <filename>rm_work.bbclass</filename></link>"
                     section for more details.
+                </para>
+            </glossdef>
+        </glossentry>
+
+        <glossentry id='var-ROOTFS_POSTPROCESS_COMMAND'><glossterm>ROOTFS_POSTPROCESS_COMMAND</glossterm>
+            <glossdef>
+                <para>
+                    Added by classes to run post processing commands once the
+                    OpenEmbedded build system has created the root filesystem.
+                    You can specify shell commands separated by semicolons:
+                    <literallayout class='monospaced'>
+     ROOTFS_POSTPROCESS_COMMAND += "&lt;shell_command&gt;; ... "
+                    </literallayout>
+                    If you need to pass the path to the root filesystem within
+                    the command, you can use
+                    <filename>${IMAGE_ROOTFS}</filename>, which points to
+                    the root filesystem image.
                 </para>
             </glossdef>
         </glossentry>
@@ -4164,6 +4373,32 @@ recipes-graphics/xorg-font/font-alias_1.0.3.bb:PR = "${INC_PR}.3"
                     namespace before any renaming of the output package by
                     classes such as <filename>debian.bbclass</filename>.
                 </para>
+
+                <para>
+                    BitBake, which the OpenEmbedded build system uses, supports
+                    specifying versioned recommends.
+                    Although the syntax varies depending on the packaging
+                    format, BitBake hides these differences from you.
+                    Here is the general syntax to specify versions with
+                    the <filename>RRECOMMENDS</filename> variable:
+                    <literallayout class='monospaced'>
+     RRECOMMENDS_${PN} = "&lt;package&gt; (&lt;operator&gt; &lt;version&gt;)"
+                    </literallayout>
+                    For <filename>operator</filename>, you can specify the
+                    following:
+                    <literallayout class='monospaced'>
+     =
+     &lt;
+     &gt;
+     &lt;=
+     &gt;=
+                    </literallayout>
+                    For example, the following sets up a recommend on version
+                    1.2 or greater of the package <filename>foo</filename>:
+                    <literallayout class='monospaced'>
+     RRECOMMENDS_${PN} = "foo (>= 1.2)"
+                    </literallayout>
+                </para>
             </glossdef>
         </glossentry>
 
@@ -4187,6 +4422,33 @@ recipes-graphics/xorg-font/font-alias_1.0.3.bb:PR = "${INC_PR}.3"
                    <literallayout class='monospaced'>
      RREPLACES_${PN} = "other-package-being-replaced"
                    </literallayout>
+                </para>
+
+                <para>
+                    BitBake, which the OpenEmbedded build system uses, supports
+                    specifying versioned replacements.
+                    Although the syntax varies depending on the packaging
+                    format, BitBake hides these differences from you.
+                    Here is the general syntax to specify versions with
+                    the <filename>RREPLACES</filename> variable:
+                    <literallayout class='monospaced'>
+     RREPLACES_${PN} = "&lt;package&gt; (&lt;operator&gt; &lt;version&gt;)"
+                    </literallayout>
+                    For <filename>operator</filename>, you can specify the
+                    following:
+                    <literallayout class='monospaced'>
+     =
+     &lt;
+     &gt;
+     &lt;=
+     &gt;=
+                    </literallayout>
+                    For example, the following sets up a replacement using
+                    version 1.2 or greater of the package
+                    <filename>foo</filename>:
+                    <literallayout class='monospaced'>
+     RREPLACES_${PN} = "foo (>= 1.2)"
+                    </literallayout>
                 </para>
             </glossdef>
         </glossentry>
@@ -4373,26 +4635,6 @@ recipes-graphics/xorg-font/font-alias_1.0.3.bb:PR = "${INC_PR}.3"
             </glossdef>
         </glossentry>
 
-        <glossentry id='var-SIGGEN_EXCLUDERECIPES_ABISAFE'><glossterm>SIGGEN_EXCLUDERECIPES_ABISAFE</glossterm>
-            <glossdef>
-                <para>
-                    A list of recipes that are completely stable and will
-                    never change.
-                    The ABI for the recipes in the list are presented by
-                    output from the tasks run to build the recipe.
-                    Use of this variable is one way to remove dependencies from
-                    one recipe on another that affect task signatures and
-                    thus force rebuilds when the recipe changes.
-                    <caution>
-                        If you add an inappropriate variable to this list,
-                        the software might break at runtime if the
-                        interface of the recipe was changed after the other
-                        had been built.
-                    </caution>
-                </para>
-            </glossdef>
-        </glossentry>
-
         <glossentry id='var-SIGGEN_EXCLUDE_SAFE_RECIPE_DEPS'><glossterm>SIGGEN_EXCLUDE_SAFE_RECIPE_DEPS</glossterm>
             <glossdef>
                 <para>
@@ -4421,11 +4663,22 @@ recipes-graphics/xorg-font/font-alias_1.0.3.bb:PR = "${INC_PR}.3"
             </glossdef>
         </glossentry>
 
-        <glossentry id='var-SITEINFO_ENDIANNESS'><glossterm>SITEINFO_ENDIANNESS</glossterm>
+        <glossentry id='var-SIGGEN_EXCLUDERECIPES_ABISAFE'><glossterm>SIGGEN_EXCLUDERECIPES_ABISAFE</glossterm>
             <glossdef>
                 <para>
-                    Specifies the endian byte order of the target system.
-                    The value should be either "le" for little-endian or "be" for big-endian.
+                    A list of recipes that are completely stable and will
+                    never change.
+                    The ABI for the recipes in the list are presented by
+                    output from the tasks run to build the recipe.
+                    Use of this variable is one way to remove dependencies from
+                    one recipe on another that affect task signatures and
+                    thus force rebuilds when the recipe changes.
+                    <caution>
+                        If you add an inappropriate variable to this list,
+                        the software might break at runtime if the
+                        interface of the recipe was changed after the other
+                        had been built.
+                    </caution>
                 </para>
             </glossdef>
         </glossentry>
@@ -4435,6 +4688,15 @@ recipes-graphics/xorg-font/font-alias_1.0.3.bb:PR = "${INC_PR}.3"
                 <para>
                     Specifies the number of bits for the target system CPU.
                     The value should be either "32" or "64".
+                </para>
+            </glossdef>
+        </glossentry>
+
+        <glossentry id='var-SITEINFO_ENDIANNESS'><glossterm>SITEINFO_ENDIANNESS</glossterm>
+            <glossdef>
+                <para>
+                    Specifies the endian byte order of the target system.
+                    The value should be either "le" for little-endian or "be" for big-endian.
                 </para>
             </glossdef>
         </glossentry>
@@ -4955,6 +5217,78 @@ recipes-graphics/xorg-font/font-alias_1.0.3.bb:PR = "${INC_PR}.3"
             </glossdef>
         </glossentry>
 
+        <glossentry id='var-TEST_QEMUBOOT_TIMEOUT'><glossterm>TEST_QEMUBOOT_TIMEOUT</glossterm>
+            <glossdef>
+                <para>
+                    The time in seconds allowed for a QEMU image to boot before
+                    tests begin to run against the image using the following
+                    command:
+                    <literallayout class='monospaced'>
+     bitbake &lt;qemu_image&gt; -c testimage
+                    </literallayout>
+                </para>
+
+                <para>
+                    The default timeout period to allow the boot process to
+                    reach the login prompt is 500 seconds.
+                    You can edit this default value in the
+                    <filename>local.conf</filename> file.
+                </para>
+
+                <para>
+                    For more information on testing QEMU images, see the
+                    "<ulink url='running-and-writing-tests-for-a-qemu-image'>Running and Writing Tests for a QEMU Image</ulink>"
+                    section in the Yocto Project Development Manual.
+                </para>
+            </glossdef>
+        </glossentry>
+
+        <glossentry id='var-TEST_SUITES'><glossterm>TEST_SUITES</glossterm>
+            <glossdef>
+                <para>
+                    An ordered list of tests (modules) to run against
+                    a QEMU image using the following command:
+                    <literallayout class='monospaced'>
+     bitbake &lt;qemu_image&gt; -c testimage
+                    </literallayout>
+                </para>
+
+                <para>
+                    The Yocto Project provides a core set of tests that can
+                    be used against QEMU images.
+                    Tests include <filename>ping</filename>,
+                    <filename>ssh</filename>, <filename>df</filename> among
+                    others.
+                    You can add your own tests to the list of tests by
+                    appending <filename>TEST_SUITES</filename> as follows:
+                    <literallayout class='monospaced'>
+     TEST_SUITES_append = " mytest"
+                    </literallayout>
+                </para>
+
+                <para>
+                    The order in which tests are run is important.
+                    Tests that depend on another test must appear later in the
+                    list than the test on which they depend.
+                    For example, if you append the list of tests with two
+                    tests (<filename>test_A</filename> and
+                    <filename>test_B</filename>) where
+                    <filename>test_B</filename> is dependent on
+                    <filename>test_A</filename>, then you must order the tests
+                    as follows:
+                    <literallayout class='monospaced'>
+     TEST_SUITES = " test_A test_B"
+                    </literallayout>
+                </para>
+
+                <para>
+                    For more information on testing QEMU images, see the
+                    "<ulink url='running-and-writing-tests-for-a-qemu-image'>Running and Writing Tests for a QEMU Image</ulink>"
+                    section in the Yocto Project Development Manual.
+                </para>
+            </glossdef>
+        </glossentry>
+
         <glossentry id='var-THISDIR'><glossterm>THISDIR</glossterm>
             <glossdef>
                 <para>
@@ -5071,8 +5405,33 @@ recipes-graphics/xorg-font/font-alias_1.0.3.bb:PR = "${INC_PR}.3"
 
     </glossdiv>
 
-<!--            <glossdiv id='var-glossary-u'><title>U</title>-->
-<!--            </glossdiv>-->
+    <glossdiv id='var-glossary-u'><title>U</title>
+
+        <glossentry id='var-USER_CLASSES'><glossterm>USER_CLASSES</glossterm>
+            <glossdef>
+                <para>
+                    A list of classes to globally inherit.
+                    These classes are used by the OpenEmbedded build system
+                    to enable extra features (e.g.
+                    <filename>buildstats</filename>,
+                    <filename>image-mklibs</filename>, and so forth).
+                </para>
+
+                <para>
+                    The default list is set in your
+                    <filename>local.conf</filename> file:
+                    <literallayout class='monospaced'>
+     USER_CLASSES ?= "buildstats image-mklibs image-prelink"
+                    </literallayout>
+                    For more information, see
+                    <filename>meta-yocto/conf/local.conf.sample</filename> in
+                    the
+                    <ulink url='&YOCTO_DOCS_DEV_URL;#source-directory'>Source Directory</ulink>.
+                </para>
+            </glossdef>
+        </glossentry>
+
+    </glossdiv>
 
 <!--            <glossdiv id='var-glossary-v'><title>V</title>-->
 <!--            </glossdiv>-->

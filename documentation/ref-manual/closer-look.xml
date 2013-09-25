@@ -106,7 +106,7 @@
             configuration files.
             These example files are used as a basis for creating actual
             configuration files when you source the build environment
-            script 
+            script
             (i.e.
             <link linkend='structure-core-script'><filename>&OE_INIT_FILE;</filename></link>
             or
@@ -129,8 +129,8 @@
         <para>
             Because the Poky repository is fundamentally an aggregation of
             existing repositories, some users might be familiar with running
-            the <filename>&OE_INIT_FILE;</filename> or 
-            <filename>oe-init-build-env-memres</filename> script in the context 
+            the <filename>&OE_INIT_FILE;</filename> or
+            <filename>oe-init-build-env-memres</filename> script in the context
             of separate OpenEmbedded-Core and BitBake repositories rather than a
             single Poky repository.
             This discussion assumes the script is executed from within a cloned
@@ -297,7 +297,7 @@
         <para>
             The following figure shows an expanded representation of the
             Metadata, Machine Configuration, and Policy Configuration input
-            (layers) boxes of the 
+            (layers) boxes of the
             <link linkend='general-yocto-environment-figure'>general Yocto Project Development Environment figure</link>:
         </para>
 
@@ -452,7 +452,7 @@
         <para>
             In order for the OpenEmbedded build system to create an image or
             any target, it must be able to access source files.
-            The 
+            The
             <link linkend='general-yocto-environment-figure'>general Yocto Project Development Environment figure</link>
             represents source files using the "Upstream Project Releases",
             "Local Projects", and "SCMs (optional)" boxes.
@@ -491,6 +491,14 @@
             <link linkend='var-DL_DIR'><filename>DL_DIR</filename></link>
             variable.
             This area is a cache that can hold previously downloaded source.
+            You can also instruct the OpenEmbedded build system to create
+            tarballs from Git repositories, which is not the default behavior,
+            and store them in the <filename>DL_DIR</filename> by using the
+            <link linkend='var-BB_GENERATE_MIRROR_TARBALLS'><filename>BB_GENERATE_MIRROR_TARBALLS</filename></link>
+            variable.
+        </para>
+
+        <para>
             Judicious use of a <filename>DL_DIR</filename> directory can
             save the build system a trip across the Internet when looking
             for files.
@@ -566,6 +574,15 @@
                 fetcher module.
             </para>
 
+            <note>
+                For information on how to have the OpenEmbedded build system
+                generate tarballs for Git repositories and place them in the
+                <link linkend='var-DL_DIR'><filename>DL_DIR</filename></link>
+                directory, see the
+                <link linkend='var-BB_GENERATE_MIRROR_TARBALLS'><filename>BB_GENERATE_MIRROR_TARBALLS</filename></link>
+                variable.
+            </note>
+
             <para>
                 When fetching a repository, BitBake uses the
                 <link linkend='var-SRCREV'><filename>SRCREV</filename></link>
@@ -601,6 +618,58 @@
         </section>
     </section>
 
+    <section id="package-feeds-dev-environment">
+        <title>Package Feeds</title>
+
+        <para>
+            When the OpenEmbedded build system generates an image or an SDK,
+            it gets the packages from a package feed area located in the
+            <ulink url='&YOCTO_DOCS_DEV_URL;#build-directory'>Build Directory</ulink>.
+            The
+            <link linkend='general-yocto-environment-figure'>general Yocto Project Development Environment figure</link>
+            shows this package feeds area in the upper-right corner.
+        </para>
+
+        <para>
+            This section looks a little closer into the package feeds area used
+            by the build system.
+            Here is a more detailed look at the area:
+            <imagedata fileref="figures/package-feeds.png" align="center" width="7in" depth="6in" />
+        </para>
+
+        <para>
+            Package feeds are an intermediary step in the build process.
+            BitBake generates packages whose type is defined by the
+            <link linkend='var-PACKAGE_CLASSES'><filename>PACKAGE_CLASSES</filename></link>
+            variable.
+            Before placing the packages into package feeds,
+            the build process validates them with generated output quality
+            assurance checks through the
+            <link linkend='ref-classes-insane'><filename>insane.bbclass</filename></link>
+            class.
+        </para>
+
+        <para>
+            The package feed area resides in
+            <filename>tmp/deploy</filename> of the Build Directory.
+            Folders are created that correspond to the package type
+            (IPK, DEB, or RPM) created.
+            Further organization is derived through the value of the
+            <link linkend='var-PACKAGE_ARCH'><filename>PACKAGE_ARCH</filename></link>
+            variable for each package.
+            For example, packages can exist for the i586 or qemux86
+            architectures.
+            The package files themselves reside within the appropriate
+            architecture folder.
+        </para>
+
+        <para>
+            BitBake uses the <filename>do_package_write_*</filename> task to
+            place generated packages into the package holding area (e.g.
+            <filename>do_package_write_ipk</filename> for IPK packages).
+        </para>
+    </section>
+
     <section id='bitbake-dev-environment'>
         <title>BitBake</title>
 
@@ -618,7 +687,7 @@
             <para>
                 The first stages of building a recipe are to fetch and unpack
                 the source code:
-                <imagedata fileref="figures/source-fetching.png" align="center" width="6.5in" depth="4in" />
+                <imagedata fileref="figures/source-fetching.png" align="center" width="6.5in" depth="5in" />
             </para>
 
             <para>
@@ -830,58 +899,151 @@
                 </note>
             </para>
         </section>
-    </section>
 
-    <section id="package-feeds-dev-environment">
-        <title>Package Feeds</title>
+        <section id='image-generation-dev-environment'>
+            <title>Image Generation</title>
 
-        <para>
-            When the OpenEmbedded build system generates an image or an SDK,
-            it gets the packages from a package feed area located in the
-            <ulink url='&YOCTO_DOCS_DEV_URL;#build-directory'>Build Directory</ulink>.
-            The 
-            <link linkend='general-yocto-environment-figure'>general Yocto Project Development Environment figure</link>
-            shows this package feeds area in the upper-right corner.
-        </para>
+            <para>
+                Once packages are split and stored in the Package Feeds area,
+                the OpenEmbedded build system uses BitBake to generate the
+                root filesystem image:
+                <imagedata fileref="figures/image-generation.png" align="center" width="6in" depth="7in" />
+            </para>
 
-        <para>
-            This section looks a little closer into the package feeds area used
-            by the build system.
-            Here is a more detailed look at the area:
-            <imagedata fileref="figures/package-feeds.png" align="center" width="7in" depth="6in" />
-        </para>
+            <para>
+                The image generation process consists of several stages and
+                depends on many variables.
+                The <filename>do_rootfs</filename> task uses these key variables
+                to help create the list of packages to actually install:
+                <itemizedlist>
+                    <listitem><para><link linkend='var-IMAGE_INSTALL'><filename>IMAGE_INSTALL</filename></link>:
+                        Lists out the base set of packages to install from
+                        the Package Feeds area.</para></listitem>
+                    <listitem><para><link linkend='var-PACKAGE_EXCLUDE'><filename>PACKAGE_EXCLUDE</filename></link>:
+                        Specifies packages that should not be installed.
+                        </para></listitem>
+                    <listitem><para><link linkend='var-IMAGE_FEATURES'><filename>IMAGE_FEATURES</filename></link>:
+                        Specifies features to include in the image.
+                        Most of these features map to additional packages for
+                        installation.</para></listitem>
+                    <listitem><para><link linkend='var-PACKAGE_CLASSES'><filename>PACKAGE_CLASSES</filename></link>:
+                        Specifies the package backend to use and consequently
+                        helps determine where to locate packages within the
+                        Package Feeds area.</para></listitem>
+                    <listitem><para><link linkend='var-IMAGE_LINGUAS'><filename>IMAGE_LINGUAS</filename></link>:
+                        Determines the language(s) for which additional
+                        language support packages are installed.
+                        </para></listitem>
+                </itemizedlist>
+            </para>
 
-        <para>
-            Package feeds are an intermediary step in the build process.
-            BitBake generates packages whose type is defined by the
-            <link linkend='var-PACKAGE_CLASSES'><filename>PACKAGE_CLASSES</filename></link>
-            variable.
-            Before placing the packages into package feeds,
-            the build process validates them with generated output quality
-            assurance checks through the
-            <link linkend='ref-classes-insane'><filename>insane.bbclass</filename></link>
-            class.
-        </para>
+            <para>
+                Package installation is under control of the package manager
+                (e.g. smart/rpm, opkg, or apt/dpkg) regardless of whether or
+                not package management is enabled for the target.
+                At the end of the process, if package management is not
+                enabled for the target, the package manager's data files
+                are deleted from the root filesystem.
+            </para>
 
-        <para>
-            The package feed area resides in
-            <filename>tmp/deploy</filename> of the Build Directory.
-            Folders are created that correspond to the package type
-            (IPK, DEB, or RPM) created.
-            Further organization is derived through the value of the
-            <link linkend='var-PACKAGE_ARCH'><filename>PACKAGE_ARCH</filename></link>
-            variable for each package.
-            For example, packages can exist for the i586 or qemux86
-            architectures.
-            The package files themselves reside within the appropriate
-            architecture folder.
-        </para>
+            <para>
+                During image generation, the build system attempts to run
+                all post installation scripts.
+                Any that fail to run on the build host are run on the
+                target when the target system is first booted.
+                If you are using a
+                <ulink url='&YOCTO_DOCS_DEV_URL;#creating-a-read-only-root-filesystem'>read-only root filesystem</ulink>,
+                all the post installation scripts must succeed during the
+                package installation phase since the root filesystem cannot be
+                written into.
+            </para>
 
-        <para>
-            BitBake uses the <filename>do_package_write_*</filename> task to
-            place generated packages into the package holding area (e.g.
-            <filename>do_package_write_ipk</filename> for IPK packages).
-        </para>
+            <para>
+                During Optimization, optimizing processes are run across
+                the image.
+                These processes include <filename>mklibs</filename> and
+                <filename>prelink</filename>.
+                The <filename>mklibs</filename> process optimizes the size
+                of the libraries.
+                A <filename>prelink</filename> process optimizes the dynamic
+                linking of shared libraries to reduce start up time of
+                executables.
+            </para>
+
+            <para>
+                Part of the image generation process includes compressing the
+                root filesystem image.
+                Compression is accomplished through several optimization
+                routines designed to reduce the overall size of the image.
+            </para>
+
+            <para>
+                After the root filesystem has been constructed, the image
+                generation process turns everything into an image file or
+                a set of image files.
+                The formats used for the root filesystem depend on the
+                <link linkend='var-IMAGE_FSTYPES'><filename>IMAGE_FSTYPES</filename></link>
+                variable.
+            </para>
+
+            <note>
+                The entire image generation process is run under Pseudo.
+                Running under Pseudo ensures that the files in the root
+                filesystem have correct ownership.
+            </note>
+        </section>
+
+        <section id='sdk-generation-dev-environment'>
+            <title>SDK Generation</title>
+
+            <para>
+                The OpenEmbedded build system uses BitBake to generate the
+                Software Development Kit (SDK) installer script:
+                <imagedata fileref="figures/sdk-generation.png" align="center" width="6in" depth="7in" />
+            </para>
+
+            <note>
+                For more information on the cross-development toolchain
+                generation, see the
+                "<link linkend='cross-development-toolchain-generation'>Cross-Development Toolchain Generation</link>"
+                section.
+            </note>
+
+            <para>
+                Like image generation, the SDK script process consists of
+                several stages and depends on many variables.
+                The <filename>do_populate_sdk</filename> task uses these
+                key variables to help create the list of packages to actually
+                install.
+                For information on the variables listed in the figure, see the
+                "<link linkend='sdk-dev-environment'>Application Development SDK</link>"
+                section.
+            </para>
+
+            <para>
+                The <filename>do_populate_sdk</filename> task handles two
+                parts: a target part and a host part.
+                The target part is the part built for the target hardware and
+                includes libraries and headers.
+                The host part is the part of the SDK that runs on the
+                <link linkend='var-SDKMACHINE'><filename>SDKMACHINE</filename></link>.
+            </para>
+
+            <para>
+                Once both parts are constructed, the
+                <filename>do_populate_sdk</filename> task performs some cleanup
+                on both parts.
+                After the cleanup, the task creates a cross-development
+                environment setup script and any configuration files that
+                might be needed.
+            </para>
+
+            <para>
+                The final output of the task is the Cross-development
+                toolchain installation script (<filename>.sh</filename> file),
+                which includes the environment setup script.
+            </para>
+        </section>
     </section>
 
     <section id='images-dev-environment'>
@@ -891,7 +1053,7 @@
             The images produced by the OpenEmbedded build system
             are compressed forms of the
             root filesystems that are ready to boot on a target device.
-            You can see from the 
+            You can see from the
             <link linkend='general-yocto-environment-figure'>general Yocto Project Development Environment figure</link>
             that BitBake output in part consists of images.
             This section is going to look more closely at this output:
@@ -907,13 +1069,16 @@
         <para>
             Images are written out to the
             <ulink url='&YOCTO_DOCS_DEV_URL;#build-directory'>Build Directory</ulink>
-            inside the <filename>deploy/images</filename> folder as shown
-            in the figure.
+            inside the <filename>deploy/images/&lt;machine&gt;/</filename>
+            folder as shown in the figure.
             This folder contains any files expected to be loaded on the
             target device.
             The
             <link linkend='var-DEPLOY_DIR'><filename>DEPLOY_DIR</filename></link>
-            variable points to the <filename>deploy</filename> directory.
+            variable points to the <filename>deploy</filename> directory,
+            while the
+            <link linkend='var-DEPLOY_DIR_IMAGE'><filename>DEPLOY_DIR_IMAGE</filename></link>
+            variable points to the machine-specific directory.
             <itemizedlist>
                 <listitem><para><filename>&lt;kernel-image&gt;</filename>:
                     A kernel binary file.
@@ -922,8 +1087,9 @@
                     kernel image file.
                     Depending on that variable, the file could begin with
                     a variety of naming strings.
-                    The <filename>deploy/images</filename> directory can
-                    contain multiple image files.</para></listitem>
+                    The <filename>deploy/images/&lt;machine&gt;</filename>
+                    directory can contain multiple image files for the
+                    machine.</para></listitem>
                 <listitem><para><filename>&lt;root-filesystem-image&gt;</filename>:
                     Root filesystems for the target device (e.g.
                     <filename>*.ext3</filename> or <filename>*.bz2</filename>
@@ -931,25 +1097,27 @@
                     The <link linkend='var-IMAGE_FSTYPES'><filename>IMAGE_FSTYPES</filename></link>
                     variable setting determines the root filesystem image
                     type.
-                    The <filename>deploy/images</filename> directory can
-                    contain multiple root filesystems.</para></listitem>
+                    The <filename>deploy/images/&lt;machine&gt;</filename>
+                    directory can contain multiple root filesystems for the
+                    machine.</para></listitem>
                 <listitem><para><filename>&lt;kernel-modules&gt;</filename>:
                     Tarballs that contain all the modules built for the kernel.
                     Kernel module tarballs exist for legacy purposes and
                     can be suppressed by setting the
                     <link linkend='var-MODULE_TARBALL_DEPLOY'><filename>MODULE_TARBALL_DEPLOY</filename></link>
                     variable to "0".
-                    The <filename>deploy/images</filename> directory can
-                    contain multiple kernel module tarballs.
-                    </para></listitem>
+                    The <filename>deploy/images/&lt;machine&gt;</filename>
+                    directory can contain multiple kernel module tarballs
+                    for the machine.</para></listitem>
                 <listitem><para><filename>&lt;bootloaders&gt;</filename>:
                     Bootloaders supporting the image, if applicable to the
                     target machine.
-                    The <filename>deploy/images</filename> directory can
-                    contain multiple bootloaders.
-                    </para></listitem>
+                    The <filename>deploy/images/&lt;machine&gt;</filename>
+                    directory can contain multiple bootloaders for the
+                    machine.</para></listitem>
                 <listitem><para><filename>&lt;symlinks&gt;</filename>:
-                    The <filename>deploy/images</filename> folder contains
+                    The <filename>deploy/images/&lt;machine&gt;</filename>
+                    folder contains
                     a symbolic link that points to the most recently built file
                     for each machine.
                     These links might be useful for external scripts that
@@ -963,7 +1131,7 @@
         <title>Application Development SDK</title>
 
         <para>
-            In the 
+            In the
             <link linkend='general-yocto-environment-figure'>general Yocto Project Development Environment figure</link>,
             the output labeled "Application Development SDK" represents an
             SDK.

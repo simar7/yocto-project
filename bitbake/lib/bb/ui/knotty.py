@@ -472,8 +472,12 @@ def main(server, eventHandler, params, tf = TerminalFilter):
                              event.taskid, event.taskstring, event.exitcode)
                 continue
 
+            if isinstance(event, bb.event.DepTreeGenerated):
+                continue
+
             # ignore
             if isinstance(event, (bb.event.BuildBase,
+                                  bb.event.MetadataEvent,
                                   bb.event.StampUpdate,
                                   bb.event.ConfigParsed,
                                   bb.event.RecipeParsed,
