@@ -56,16 +56,20 @@ maybe_make32() {
 	fi
 	if $make32; then
 		if ! [ -e "/usr/include/gnu/stubs-32.h" ]; then
-			echo >&2 "WARNING: Can't find stubs-32.h, but usually need it to build 32-bit libpseudo."
-			echo >&2 "If the build fails, install 32-bit developer packages."
-			echo >&2 "If you are using 32-bit binaries, the 32-bit libpseudo is NOT optional."
+			warn_32bit_missing
 		else
-			echo "Attempting to build 32-bit libpseudo.so for ${PN}."
+			bbnote "Attempting to build 32-bit libpseudo.so for ${PN}."
 		fi
 	else
-		echo "Building/installing only 64-bit libpseudo.so for ${PN}."
-		echo "If you need to run 32-bit executables, ensure that NO32LIBS is set to 0."
+		bbnote "Building/installing only 64-bit libpseudo.so for ${PN}."
+		bbnote "If you need to run 32-bit executables, ensure that NO32LIBS is set to 0."
 	fi
+}
+
+warn_32bit_missing() {
+	bbwarn "Can't find stubs-32.h, but usually need it to build 32-bit libpseudo."
+	bbwarn "If the build fails, install 32-bit developer packages."
+	bbwarn "If you are using 32-bit binaries, the 32-bit libpseudo is NOT optional."
 }
 
 # Two below are the same
@@ -83,7 +87,10 @@ do_compile_prepend_class-native () {
 		make ${MAKEOPTS} distclean || :
 
 		./configure ${PSEUDO_EXTRA_OPTS} --prefix=${prefix} --libdir=${prefix}/lib/pseudo/lib --with-sqlite-lib=${baselib} --with-sqlite=${STAGING_DIR_TARGET}${exec_prefix} --bits=32 --without-rpath
+		save_traps=$(trap)
+		trap 'warn_32bit_missing' 0
 		oe_runmake ${MAKEOPTS} libpseudo
+		eval "$save_traps"
 		# prevent it from removing the lib, but remove everything else
 		make 'LIB=foo' ${MAKEOPTS} distclean 
 	fi
