@@ -47,7 +47,13 @@ python () {
             bb.debug(1, "Setting UBOOT_MACHINE to %s." % items[0])
             d.setVar('UBOOT_MACHINE', items[0])
 
-            if items[1]:
+            # IMAGE_FSTYPES appending
+            if len(items) > 1 and items[1]:
                 bb.debug(1, "Appending '%s' to IMAGE_FSTYPES." % items[1])
                 d.appendVar('IMAGE_FSTYPES', ' ' + items[1])
+
+            # Go out as we found a match!
+            break
+    else:
+        raise ValueError("UBOOT_CONFIG %s is not supported" % ubootconfig)
 }

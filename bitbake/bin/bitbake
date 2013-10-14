@@ -41,7 +41,7 @@ from bb import ui
 from bb import server
 from bb import cookerdata
 
-__version__ = "1.20.0"
+__version__ = "1.21.0"
 logger = logging.getLogger("BitBake")
 
 # Python multiprocessing requires /dev/shm
@@ -262,8 +262,8 @@ def main():
         if not configParams.bind:
             sys.exit("FATAL: The '--server-only' option requires a name/address to bind to with the -B option.\n")
         if configParams.remote_server:
-            sys.exit("FATAL: The '--server-only' option conflicts with the '--remote-server' option. %s\n" % 
-                ("Please check your BBSERVER environment" if "BBSERVER" in os.environ else "" ))
+            sys.exit("FATAL: The '--server-only' option conflicts with %s.\n" % 
+                ("the BBSERVER environment variable" if "BBSERVER" in os.environ else "the '--remote-server' option" ))
 
     if configParams.bind and configParams.servertype != "xmlrpc":
         sys.exit("FATAL: If '-B' or '--bind' is defined, we must set the servertype as 'xmlrpc'.\n")
@@ -292,12 +292,11 @@ def main():
     if not configParams.remote_server:
         # we start a server with a given configuration
         server = start_server(servermodule, configParams, configuration)
+        bb.event.ui_queue = []
     else:
         # we start a stub server that is actually a XMLRPClient that connects to a real server
         server = servermodule.BitBakeXMLRPCClient(configParams.observe_only)
         server.saveConnectionDetails(configParams.remote_server)
-
-    logger.removeHandler(handler)
 
     if not configParams.server_only:
         # Collect the feature set for the UI
@@ -309,6 +308,8 @@ def main():
         # Restore the environment in case the UI needs it
         for k in cleanedvars:
             os.environ[k] = cleanedvars[k]
+
+        logger.removeHandler(handler)
 
         try:
             return ui_module.main(server_connection.connection, server_connection.events, configParams)
@@ -323,6 +324,8 @@ def main():
 if __name__ == "__main__":
     try:
         ret = main()
+    except bb.BBHandledException:
+        ret = 1
     except Exception:
         ret = 1
         import traceback

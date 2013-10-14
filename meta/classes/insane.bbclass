@@ -42,6 +42,8 @@ ERROR_QA ?= "dev-so debug-deps dev-deps debug-files arch pkgconfig la \
 
 ALL_QA = "${WARN_QA} ${ERROR_QA}"
 
+UNKNOWN_CONFIGURE_WHITELIST ?= "--enable-nls --disable-nls --disable-silent-rules --disable-dependency-tracking --with-libtool-sysroot"
+
 #
 # dictionary for elf headers
 #
@@ -55,6 +57,7 @@ def package_qa_get_machine_dict():
                       },
             "linux" : { 
                         "aarch64" :   (183,    0,    0,          True,          64),
+                        "aarch64_be" :(183,    0,    0,          False,         64),
                         "arm" :       (40,    97,    0,          True,          32),
                         "armeb":      (40,    97,    0,          False,         32),
                         "powerpc":    (20,     0,    0,          False,         32),
@@ -861,7 +864,7 @@ python do_package_qa () {
 python do_qa_staging() {
     bb.note("QA checking staging")
 
-    if not package_qa_check_staged(d.expand('${SYSROOT_DESTDIR}/${STAGING_LIBDIR}'), d):
+    if not package_qa_check_staged(d.expand('${SYSROOT_DESTDIR}${STAGING_LIBDIR}'), d):
         bb.fatal("QA staging was broken by the package built above")
 }
 
@@ -916,6 +919,24 @@ Missing inherit gettext?""" % (gt, config))
     if not package_qa_check_license(workdir, d):
         bb.fatal("Licensing Error: LIC_FILES_CHKSUM does not match, please fix")
 
+    ###########################################################################
+    # Check unrecognised configure options (with a white list)
+    ###########################################################################
+    if bb.data.inherits_class("autotools", d):
+        bb.note("Checking configure output for unrecognised options")
+        try:
+            flag = "WARNING: unrecognized options:"
+            log = os.path.join(d.getVar('B', True), 'config.log')
+            output = subprocess.check_output(['grep', '-F', flag, log])
+            options = set(map(lambda s: s.strip(' ,'), output.partition(flag)[2].split()))
+            whitelist = set(d.getVar("UNKNOWN_CONFIGURE_WHITELIST", True).split())
+            options -= whitelist
+            if options:
+		pn = d.getVar('PN', True)
+                error_msg = pn + ": configure was passed unrecognised options: " + " ".join(options)
+                package_qa_handle_error("unknown-configure-option", error_msg, d)
+        except subprocess.CalledProcessError:
+            pass
 }
 # The Staging Func, to check all staging
 #addtask qa_staging after do_populate_sysroot before do_build

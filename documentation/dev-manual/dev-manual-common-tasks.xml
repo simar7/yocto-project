@@ -3064,7 +3064,7 @@
                     </para></listitem>
                 <listitem><para>Handling optional module packaging
                     </para></listitem>
-                <listitem><para>Setting up Runtime Package Management
+                <listitem><para>Using Runtime Package Management
                     </para></listitem>
                 <listitem><para>Setting up and running package test
                     (ptest)
@@ -3605,56 +3605,226 @@
             </section>
         </section>
 
-        <section id='setting-up-runtime-package-management'>
-            <title>Setting Up Runtime Package Management</title>
+        <section id='using-runtime-package-management'>
+            <title>Using Runtime Package Management</title>
 
             <para>
-                For RPM, IPK, and DEB package formats, it is possible to set
-                up a repository that is a host-based
-                package feed from which you can install packages on the
-                target system during runtime.
-                Doing so is optional and depends on the following:
+                During a build, BitBake always transforms a recipe into one or
+                more packages.
+                For example, BitBake takes the <filename>bash</filename> recipe
+                and currently produces the <filename>bash-dbg</filename>,
+                <filename>bash-staticdev</filename>,
+                <filename>bash-dev</filename>, <filename>bash-doc</filename>,
+                <filename>bash-locale</filename>, and
+                <filename>bash</filename> packages.
+                Not all generated packages are included in an image.
+            </para>
+
+            <para>
+                In several situations, you might need to update, add, remove,
+                or query the packages on a target device at runtime
+                (i.e. without having to generate a new image).
+                Examples of such situations include:
                 <itemizedlist>
                     <listitem><para>
-                        You take specific steps to set up the feed.
+                        You want to provide in-the-field updates to deployed
+                        devices (e.g. security updates).
                         </para></listitem>
                     <listitem><para>
-                        When you build your image, you select to use the
-                        appropriate package manager by setting the
-                        <ulink url='&YOCTO_DOCS_REF_URL;#var-PACKAGE_CLASSES'><filename>PACKAGE_CLASSES</filename></ulink>
-                        variable.
+                        You want to have a fast turn-around development cycle
+                        for one or more applications that run on your device.
                         </para></listitem>
                     <listitem><para>
-                        You have a web server, such as Apache 2,
-                        installed and configured on the development host.
+                        You want to temporarily install the "debug" packages
+                        of various applications on your device so that
+                        debugging can be greatly improved by allowing
+                        access to symbols and source debugging.
                         </para></listitem>
                     <listitem><para>
-                        You have <filename>createrepo</filename> installed on
-                        the development host.
-                        </para></listitem>
-                    <listitem><para>
-                        You enable package management on the target by
-                        listing "package-management" in the
-                        <ulink url='&YOCTO_DOCS_REF_URL;#var-IMAGE_FEATURES'><filename>IMAGE_FEATURES</filename></ulink>
-                        variable.
+                        You want to deploy a more minimal package selection of
+                        your device but allow in-the-field updates to add a
+                        larger selection for customization.
                         </para></listitem>
                 </itemizedlist>
             </para>
 
             <para>
-                Following are the steps to set up the optional repository.
-                This example assumes you are using RPM and the Apache 2
-                server:
-                <orderedlist>
-                    <listitem><para>
-                        Add the directory to your Apache configuration, which
-                        you can find at
-                        <filename>/etc/httpd/conf/httpd.conf</filename>.
-                        Use commands similar to these on the development system.
-                        These example commands assume a top-level
-                        <link linkend='source-directory'>Source Directory</link>
-                        named <filename>poky</filename> in your home directory:
-                        <literallayout class='monospaced'>
+                In all these situations, you have something similar to a more
+                traditional Linux distribution in that in-field devices
+                are able to receive pre-compiled packages from a server for
+                installation or update.
+                Being able to install these packages on a running,
+                in-field device is what is termed "runtime package
+                management".
+            </para>
+
+            <para>
+                In order to use runtime package management, you
+                need a host/server machine that serves up the pre-compiled
+                packages plus the required metadata.
+                You also need package manipulation tools on the target.
+                The build machine is a likely candidate to act as the server.
+                However, that machine does not necessarily have to be the
+                package server.
+                The build machine could push its artifacts to another machine
+                that acts as the server (e.g. Internet-facing).
+            </para>
+
+            <para>
+                A simple build that targets just one device produces
+                more than one package database.
+                In other words, the packages produced by a build are separated
+                out into a couple of different package groupings based on
+                criteria such as the target's CPU architecture, the target
+                board, or the C library used on the target.
+                For example, a build targeting the <filename>qemuarm</filename>
+                device produces the following three package databases:
+                <filename>all</filename>, <filename>armv5te</filename>, and
+                <filename>qemuarm</filename>.
+                If you wanted your <filename>qemuarm</filename> device to be
+                aware of all the packages that were available to it,
+                you would need to point it to each of these databases
+                individually.
+                In a similar way, a traditional Linux distribution usually is
+                configured to be aware of a number of software repositories
+                from which it retrieves packages.
+            </para>
+
+            <para>
+                Using runtime package management is completely optional and
+                not required for a successful build or deployment in any
+                way.
+                But if you want to make use of runtime package management,
+                you need to do a couple things above and beyond the basics.
+                The remainder of this section describes what you need to do.
+            </para>
+
+            <section id='runtime-package-management-build'>
+                <title>Build Considerations</title>
+
+                <para>
+                    This section describes build considerations that you need
+                    to be aware of in order to provide support for runtime
+                    package management.
+                </para>
+
+                <para>
+                    When BitBake generates packages it needs to know
+                    what format(s) to use.
+                    In your configuration, you use the
+                    <ulink url='&YOCTO_DOCS_REF_URL;#var-PACKAGE_CLASSES'><filename>PACKAGE_CLASSES</filename></ulink>
+                    variable to specify the format.
+                    <note>
+                        You can choose to have more than one format but you must
+                        provide at least one.
+                    </note>
+                </para>
+
+                <para>
+                    If you would like your image to start off with a basic
+                    package database of the packages in your current build
+                    as well as have the relevant tools available on the
+                    target for runtime package management, you can include
+                    "package-management" in the
+                    <ulink url='&YOCTO_DOCS_REF_URL;#var-IMAGE_FEATURES'><filename>IMAGE_FEATURES</filename></ulink>
+                    variable.
+                    Including "package-management" in this
+                    configuration variable ensures that when the image
+                    is assembled for your target, the image includes
+                    the currently-known package databases as well as
+                    the target-specific tools required for runtime
+                    package management to be performed on the target.
+                    However, this is not strictly necessary.
+                    You could start your image off without any databases
+                    but only include the required on-target package
+                    tool(s).
+                    As an example, you could include "opkg" in your
+                    <ulink url='&YOCTO_DOCS_REF_URL;#var-IMAGE_INSTALL'><filename>IMAGE_INSTALL</filename></ulink>
+                    variable if you are using the IPK package format.
+                    You can then initialize your target's package database(s)
+                    later once your image is up and running.
+                </para>
+
+                <para>
+                    Whenever you perform any sort of build step that can
+                    potentially generate a package or modify an existing
+                    package, it is always a good idea to re-generate the
+                    package index with:
+                    <literallayout class='monospaced'>
+    $ bitbake package-index
+                    </literallayout>
+                    Realize that it is not sufficient to simply do the
+                    following:
+                    <literallayout class='monospaced'>
+    $ bitbake &lt;some-package&gt; package-index
+                    </literallayout>
+                    This is because BitBake does not properly schedule the
+                    <filename>package-index</filename> target fully after any
+                    other target has completed.
+                    Thus, be sure to run the package update step separately.
+                </para>
+
+                <para>
+                    As described below in the
+                    "<link linkend='runtime-package-management-target-ipk'>Using IPK</link>"
+                    section, if you are using IPK as your package format, you
+                    can make use of the
+                    <filename>distro-feed-configs</filename> recipe provided
+                    by <filename>meta-oe</filename> in order to configure your
+                    target to use your IPK databases.
+                </para>
+
+                <para>
+                    When your build is complete, your packages reside in the
+                    <filename>${TMPDIR}/deploy/&lt;package-format&gt;</filename>
+                    directory.
+                    For example, if <filename>${TMPDIR}</filename>
+                    is <filename>tmp</filename> and your selected package type
+                    is IPK, then your IPK packages are available in
+                    <filename>tmp/deploy/ipk</filename>.
+                </para>
+            </section>
+
+            <section id='runtime-package-management-server'>
+                <title>Host or Server Machine Setup</title>
+
+                <para>
+                    Typically, packages are served from a server using
+                    HTTP.
+                    However, other protocols are possible.
+                    If you want to use HTTP, then setup and configure a
+                    web server, such as Apache 2 or lighttpd, on the machine
+                    serving the packages.
+                </para>
+
+                <para>
+                    As previously mentioned, the build machine can act as the
+                    package server.
+                    In the following sections that describe server machine
+                    setups, the build machine is assumed to also be the server.
+                </para>
+
+                <section id='package-server-apache'>
+                    <title>Serving Packages via Apache 2</title>
+
+                    <para>
+                        This example assumes you are using the Apache 2
+                        server:
+                        <orderedlist>
+                            <listitem><para>
+                                Add the directory to your Apache
+                                configuration, which you can find at
+                                <filename>/etc/httpd/conf/httpd.conf</filename>.
+                                Use commands similar to these on the
+                                development system.
+                                These example commands assume a top-level
+                                <link linkend='source-directory'>Source Directory</link>
+                                named <filename>poky</filename> in your home
+                                directory.
+                                The example also assumes an RPM package type.
+                                If you are using a different package type, such
+                                as IPK, use "ipk" in the pathnames:
+                                <literallayout class='monospaced'>
      &lt;VirtualHost *:80&gt;
        ....
          Alias /rpm ~/poky/build/tmp/deploy/rpm
@@ -3662,93 +3832,199 @@
            Options +Indexes
          &lt;/Directory&gt;
      &lt;/VirtualHost&gt;
-                        </literallayout>
-                        </para></listitem>
-                    <listitem><para>
-                        Reload the Apache configuration as follows.
-                        For all commands, be sure you have root privileges.
-                        </para>
-                        <para>
-                        If your development system is using Fedora or
-                        CentOS, use the following:
+                                </literallayout></para></listitem>
+                            <listitem><para>
+                                Reload the Apache configuration as described
+                                in this step.
+                                For all commands, be sure you have root
+                                privileges.
+                                </para>
+
+                                <para>
+                                If your development system is using Fedora or
+                                CentOS, use the following:
+                                <literallayout class='monospaced'>
+     # service httpd reload
+                                </literallayout>
+                                For Ubuntu and Debian, use the following:
+                                <literallayout class='monospaced'>
+     # /etc/init.d/apache2 reload
+                                </literallayout>
+                                For OpenSUSE, use the following:
+                                <literallayout class='monospaced'>
+     # /etc/init.d/apache2 reload
+                                </literallayout></para></listitem>
+                            <listitem><para>
+                                If you are using Security-Enhanced Linux
+                                (SELinux), you need to label the files as
+                                being accessible through Apache.
+                                Use the following command from the development
+                                host.
+                                This example assumes RPM package types:
+                                <literallayout class='monospaced'>
+     # chcon -R -h -t httpd_sys_content_t tmp/deploy/rpm
+                                </literallayout></para></listitem>
+                        </orderedlist>
+                    </para>
+                </section>
+
+                <section id='package-server-lighttpd'>
+                    <title>Serving Packages via lighttpd</title>
+
+                    <para>
+                        If you are using lighttpd, all you need
+                        to do is to provide a link from your
+                        <filename>${TMPDIR}/deploy/&lt;package-format&gt;</filename>
+                        directory to lighttpd's document-root.
+                        You can determine the specifics of your lighttpd
+                        installation by looking through its configuration file,
+                        which is usually found at:
+                        <filename>/etc/lighttpd/lighttpd.conf</filename>.
+                    </para>
+
+                    <para>
+                        For example, if you are using IPK, lighttpd's
+                        document-root is set to
+                        <filename>/var/www/lighttpd</filename>, and you had
+                        packages for a target named "BOARD",
+                        then you might create a link from your build location
+                        to lighttpd's document-root as follows:
                         <literallayout class='monospaced'>
-     service httpd reload
+    # ln -s $(PWD)/tmp/deploy/ipk /var/www/lighttpd/BOARD-dir
                         </literallayout>
-                        For Ubuntu and Debian, use the following:
+                    </para>
+
+                    <para>
+                        At this point, you need to start the lighttpd server.
+                        The method used to start the server varies by
+                        distribution.
+                        However, one basic method that starts it by hand is:
                         <literallayout class='monospaced'>
-     /etc/init.d/apache2 reload
+    # lighttpd -f /etc/lighttpd/lighttpd.conf
                         </literallayout>
-                        For OpenSUSE, use the following:
+                    </para>
+                </section>
+            </section>
+
+            <section id='runtime-package-management-target'>
+                <title>Target Setup</title>
+
+                <para>
+                    Setting up the target differs depending on the
+                    package management system.
+                    This section provides information for RPM and IPK.
+                </para>
+
+                <section id='runtime-package-management-target-rpm'>
+                    <title>Using RPM</title>
+
+                    <para>
+                        The application for performing runtime package
+                        management of RPM packages on the target is called
+                        <filename>smart</filename>.
+                    </para>
+
+                    <para>
+                        On the target machine, you need to inform
+                        <filename>smart</filename> of every package database
+                        you want to use.
+                        As an example, suppose your target device can use the
+                        following three package databases from a server named
+                        <filename>server.name</filename>:
+                        <filename>all</filename>, <filename>i586</filename>,
+                        and <filename>qemux86</filename>.
+                        Given this example, issue the following commands on the
+                        target:
                         <literallayout class='monospaced'>
-     /etc/init.d/apache2 reload
+     # smart channel --add all type=rpm-md baseurl=http://server.name/rpm/all
+     # smart channel --add i585 type=rpm-md baseurl=http://server.name/rpm/i586
+     # smart channel --add qemux86 type=rpm-md baseurl=http://server.name/rpm/qemux86
                         </literallayout>
-                        </para></listitem>
-                    <listitem><para>
-                        Change your working directory to
-                        <filename>tmp/deploy/rpm</filename> in the
-                        <link linkend='build-directory'>Build Directory</link>.
-                        </para></listitem>
-                    <listitem><para>
-                        Create the repository data on the host using
-                        this command:
-                        <literallayout class='monospaced'>
-     createrepo .
-                        </literallayout>
-                        </para>
-                        <para>
-                            <note>
-                                If you're updating, add
-                                <filename>&dash;&dash;update</filename> to save some time.
-                            </note>
-                        </para></listitem>
-                    <listitem><para>
-                        If you are using Security-Enhanced Linux (SELinux),
-                        you need to label the files as being accessible
-                        through Apache.
-                        Use the following command from the development host:
-                        <literallayout class='monospaced'>
-     chcon -R -h -t httpd_sys_content_t .
-                        </literallayout>
-                        </para></listitem>
-                    <listitem><para>
-                        On the target machine, add the repository to Smart.
-                        For <filename>somealias</filename>, provide a local
-                        alias for the repository:
-                        <literallayout class='monospaced'>
-     smart channel &dash;&dash;add &lt;somealias&gt; type=rpm-md baseurl=http://server.name/rpm
-                        </literallayout>
-                        </para></listitem>
-                    <listitem><para>
                         Also from the target machine, fetch the repository
                         information using this command:
                         <literallayout class='monospaced'>
-     smart update
+     # smart update
                         </literallayout>
-                        </para></listitem>
-                </orderedlist>
-            </para>
+                        You can now use the <filename>smart query</filename>
+                        and <filename>smart install</filename> commands to
+                        find and install packages from the repositories.
+                    </para>
+                </section>
 
-            <para>
-                After taking these steps and making sure that the other
-                requirements mentioned at the beginning of the section are met,
-                reboot the target device to take advantage of runtime package
-                installations.
-            </para>
+                <section id='runtime-package-management-target-ipk'>
+                    <title>Using IPK</title>
 
-            <para>
-                If your packages are IPK, you can install packages onto an
-                existing running system by first sharing the
-                <filename>tmp/deploy/ipk/</filename> directory
-                through a web server and then by changing
-                <filename>/etc/opkg/base-feeds.conf</filename>
-                to point at the shared server.
-                Following is an example:
-                <literallayout class='monospaced'>
-     $ src/gz all http://www.mysite.com/somedir/deploy/ipk/all
-     $ src/gz armv7a http://www.mysite.com/somedir/deploy/ipk/armv7a
-     $ src/gz beagleboard http://www.mysite.com/somedir/deploy/ipk/beagleboard
-                </literallayout>
-            </para>
+                    <para>
+                        The application for performing runtime package
+                        management of IPK packages on the target is called
+                        <filename>opkg</filename>.
+                    </para>
+
+                    <para>
+                        In order to inform <filename>opkg</filename> of the
+                        package databases you want to use, simply create one
+                        or more <filename>*.conf</filename> files in the
+                        <filename>/etc/opkg</filename> directory on the target.
+                        The <filename>opkg</filename> application uses them
+                        to find its available package databases.
+                        As an example, suppose you configured your HTTP server
+                        on your machine named
+                        <filename>www.mysite.com</filename> to serve files
+                        from a <filename>BOARD-dir</filename> directory under
+                        its document-root.
+                        In this case, you might create a configuration
+                        file on the target called
+                        <filename>/etc/opkg/base-feeds.conf</filename> that
+                        contains:
+                        <literallayout class='monospaced'>
+     src/gz all http://www.mysite.com/BOARD-dir/all
+     src/gz armv7a http://www.mysite.com/BOARD-dir/armv7a
+     src/gz beagleboard http://www.mysite.com/BOARD-dir/beagleboard
+                        </literallayout>
+                    </para>
+
+                    <para>
+                        As a way of making it easier to generate and make
+                        these IPK configuration files available on your
+                        target, the <filename>meta-oe</filename> layer
+                        provides a recipe called
+                        <filename>distro-feed-configs</filename>, which
+                        provides a package by the same name.
+                        When you include this package into your image, it will
+                        automatically generate and include a set of
+                        <filename>*.conf</filename> files in the image's
+                        <filename>/etc/opkg</filename> directory that will
+                        provide your target's <filename>opkg</filename>
+                        tool with any and all package databases your build will
+                        generate.
+                        The only catch is that this recipe cannot possibly
+                        imagine your server's DNS name/IP address.
+                        Consequently, somewhere in your configuration you need
+                        to set a variable called
+                        <filename>DISTRO_FEED_URI</filename> to point
+                        to your server and the location within the
+                        document-root that contains the databases.
+                        For example: if you are serving your packages over HTTP,
+                        your server's IP address is 192.168.7.1, and your
+                        databases are located in a directory called
+                        <filename>BOARD-dir</filename> underneath your HTTP
+                        server's document-root, you need to set
+                        <filename>DISTRO_FEED_URI</filename> to
+                        <filename>http://192.168.7.1/BOARD-dir</filename>.
+                    </para>
+
+                    <para>
+                        On the target machine, fetch (or refresh) the
+                        repository information using this command:
+                        <literallayout class='monospaced'>
+     # opkg update
+                        </literallayout>
+                        You can now use the <filename>opkg list</filename> and
+                        <filename>opkg install</filename> commands to find and
+                        install packages from the repositories.
+                    </para>
+                </section>
+            </section>
         </section>
 
         <section id='testing-packages-with-ptest'>
@@ -4252,24 +4528,22 @@
         </section>
     </section>
 
-    <section id="running-and-writing-tests-for-a-qemu-image">
-        <title>Running and Writing Tests for a QEMU Image</title>
+    <section id="performing-automated-runtime-testing">
+        <title>Performing Automated Runtime Testing</title>
 
         <para>
             The OpenEmbedded build system makes available a series of automated
-            tests for QEMU images.
-            These tests are commands that run on the target system over
-            <filename>ssh</filename> and are written in Python, thus making
-            use of the <filename>unittest</filename> module.
-        </para>
-
-        <para>
+            tests for images to verify runtime functionality.
+            <note>
+                Currently, there is only support for running these tests
+                under QEMU.
+            </note>
+            These tests are written in Python making use of the
+            <filename>unittest</filename> module, and the majority of them
+            run commands on the target system over
+            <filename>ssh</filename>.
             This section describes how you set up the environment to use these
             tests, run available tests, and write and add your own tests.
-            You can the same information in a different form and with example
-            log files of test runs on the
-            <ulink url='https://wiki.yoctoproject.org/wiki/Image_tests'>Image Tests</ulink>
-            Wiki page.
         </para>
 
         <section id="qemu-image-enabling-tests">
@@ -4278,9 +4552,8 @@
             <para>
                 In order to run tests, you need to do the following:
                 <itemizedlist>
-                    <listitem><para><emphasis>Ensure you run the test
-                        automatically with no interaction and under
-                        <filename>sudo</filename>:</emphasis>
+                    <listitem><para><emphasis>Set up to avoid interaction
+                        with <filename>sudo</filename> for networking:</emphasis>
                         To accomplish this, you must do one of the
                         following:
                         <itemizedlist>
@@ -4300,12 +4573,13 @@
                             <listitem><para>Manually configure a tap interface
                                 for your system.</para></listitem>
                             <listitem><para>Run as root the script in
-                                <filename>scripts/runqemu-gen-tapdev</filename>,
+                                <filename>scripts/runqemu-gen-tapdevs</filename>,
                                 which should generate a list of tap devices.
-                                List generation is usually done in environments
-                                similar to AutoBuilder.</para></listitem>
+                                This is the option typically chosen for
+                                Autobuilder-type environments.
+                                </para></listitem>
                         </itemizedlist></para></listitem>
-                    <listitem><para><emphasis>Set up the
+                    <listitem><para><emphasis>Set the
                         <filename>DISPLAY</filename> variable:</emphasis>
                         You need to set this variable so that you have an X
                         server available (e.g. start
@@ -4321,30 +4595,14 @@
                         <filename>${DEPLOY_DIR}/rpm</filename> so it can run
                         smart channel commands. That means your host's firewall
                         must accept incoming connections from 192.168.7.0/24,
-                        which is the default class used for
-                        <filename>tap0</filename> devices by
-                        <filename>runqemu</filename>.</para></listitem>
-                    <listitem><para><emphasis>Have your QEMU image built:</emphasis>
-                        The QEMU image on which you want to run tests needs to
-                        be built.
-                        For example, the following command would build the
-                        <filename>core-image-sato</filename> image when
-                        <filename>MACHINE</filename> is set to "qemu".
-                        <literallayout class='monospaced'>
-    bitbake core-image-sato
-                        </literallayout></para></listitem>
-                    <listitem><para><emphasis>Globally inherit
-                        <ulink url='&YOCTO_DOCS_REF_URL;#ref-classes-testimage'><filename>testimage.class</filename>:</ulink></emphasis>
-                        Edit your <filename>local.conf</filename> file as
-                        follows:
-                        <literallayout class='monospaced'>
-    INHERIT += "testimage"
-                        </literallayout></para></listitem>
+                        which is the default IP range used for tap devices
+                        by <filename>runqemu</filename>.</para></listitem>
                 </itemizedlist>
             </para>
 
             <note>
-                If you built your QEMU image using <filename>rm_work</filename>,
+                Regardless of how you initiate the tests, if you built your
+                image using <filename>rm_work</filename>,
                 most of the tests will fail with errors because they rely on
                 <filename>${WORKDIR}/installed_pkgs.txt</filename>.
             </note>
@@ -4354,15 +4612,42 @@
             <title>Running Tests</title>
 
             <para>
-                After setting up to run the tests, use BitBake to start
-                the standard suite of tests:
-                <literallayout class='monospaced'>
-     bitbake core-image-sato -c testimage
-                </literallayout>
+                You can start the tests automatically or manually:
+                <itemizedlist>
+                    <listitem><para><emphasis>Automatically Running Tests:</emphasis>
+                        To run the tests automatically after the
+                        OpenEmbedded build system successfully creates an image,
+                        first set the
+                        <ulink url='&YOCTO_DOCS_REF_URL;#var-TEST_IMAGE'><filename>TEST_IMAGE</filename></ulink>
+                        variable to "1" in your <filename>local.conf</filename>
+                        file in the
+                        <ulink url='&YOCTO_DOCS_DEV_URL;#build-directory'>Build Directory</ulink>:
+                        <literallayout class='monospaced'>
+     TEST_IMAGE = "1"
+                        </literallayout>
+                        Next, simply build your image.
+                        If the image successfully builds, the tests will be
+                        run:
+                        <literallayout class='monospaced'>
+     bitbake core-image-sato
+                        </literallayout></para></listitem>
+                    <listitem><para><emphasis>Manually Running Tests:</emphasis>
+                        To manually run the tests, first globally inherit
+                        <ulink url='&YOCTO_DOCS_REF_URL;#ref-classes-testimage'><filename>testimage.class</filename></ulink>
+                        by editing your <filename>local.conf</filename> file:
+                        <literallayout class='monospaced'>
+    INHERIT += "testimage"
+                        </literallayout>
+                        Next, use BitBake to run the tests:
+                        <literallayout class='monospaced'>
+     bitbake -c testimage &lt;image&gt;
+                        </literallayout></para></listitem>
+                </itemizedlist>
             </para>
 
             <para>
-                Once you start the tests, the following happens:
+                Regardless of how you run the tests, once they start, the
+                following happens:
                 <itemizedlist>
                     <listitem><para>A copy of the root filesystem is written
                         to <filename>${WORKDIR}/testimage</filename>.
@@ -4400,11 +4685,10 @@
                 All test files reside in
                 <filename>meta/lib/oeqa/runtime</filename> in the
                 <link linkend='source-directory'>Source Directory</link>.
-                Tests (also referred to as modules) have a one-to-one
-                relationship with the filenames in <filename>runtime</filename>.
-                Modules can have multiple classes and test methods and are
-                usually grouped together by the area tested (e.g tests for
-                <filename>systemd</filename> reside in
+                A test name maps directly to a Python module.
+                Each test module may contain a number of individual tests.
+                Tests are usually grouped together by the area
+                tested (e.g tests for <filename>systemd</filename> reside in
                 <filename>meta/lib/oeqa/runtime/systemd.py</filename>).
             </para>
 
@@ -4412,12 +4696,13 @@
                 You can add tests to any layer provided you place them in the
                 proper area and you extend
                 <ulink url='&YOCTO_DOCS_REF_URL;#var-BBPATH'><filename>BBPATH</filename></ulink>
-                in the <filename>local.conf</filename> file.
+                in the <filename>local.conf</filename> file as normal.
                 Be sure that tests reside in
                 <filename>&lt;layer&gt;/lib/oeqa/runtime</filename>.
                 <note>
                     Be sure that module names do not collide with module names
-                    provided by the Yocto Project.
+                    used in the default set of test modules in
+                    <filename>meta/lib/oeqa/runtime</filename>.
                 </note>
             </para>
 
@@ -4427,12 +4712,13 @@
                 variable in <filename>local.conf</filename>.
                 Each name in <filename>TEST_SUITES</filename> represents a
                 required test for the image.
-                Module skipping is not allowed even if a test is not suitable
-                for an image (e.g. running the <filename>rpm</filename> tests on
-                an image without <filename>rpm</filename>).
+                Test modules named within <filename>TEST_SUITES</filename>
+                cannot be skipped even if a test is not suitable for an image
+                (e.g. running the rpm tests on an image without
+                <filename>rpm</filename>).
                 Appending "auto" to <filename>TEST_SUITES</filename> causes the
                 build system to try to run all tests that are suitable for the
-                image (i.e. the build system decides whether to run each test).
+                image (i.e. each test module may elect to skip itself).
             </para>
 
             <para>
@@ -4453,17 +4739,12 @@
             </para>
 
             <para>
-                The following list summarizes how to run the tests:
+                Here are some things to keep in mind when running tests:
                 <itemizedlist>
-                    <listitem><para>Run the default set of tests simply by
-                        running the following:
-                        <literallayout class='monospaced'>
-     bitbake &lt;qemu_image&gt; -c testimage
-                        </literallayout></para></listitem>
                     <listitem><para>The default tests for the image are defined
                         as:
                         <literallayout class='monospaced'>
-     DEFAULT_TEST_SUITES_pn-&lt;qemu_image&gt; = "ping ssh df connman syslog xorg scp vnc date rpm smart dmesg"
+     DEFAULT_TEST_SUITES_pn-&lt;image&gt; = "ping ssh df connman syslog xorg scp vnc date rpm smart dmesg"
                         </literallayout></para></listitem>
                     <listitem><para>Add your own test to the list of the
                         by using the following:
@@ -4487,15 +4768,16 @@
             <para>
                 As mentioned previously, all new test files need to be in the
                 proper place for the build system to find them.
-                New tests can go in the
-                <link linkend='source-directory'>Source Directory</link> at
-                <filename>meta/lib/oeqa/runtime</filename>.
-                Alternatively, a layer can add its own tests in
-                <filename>&lt;layer&gt;/lib/oeqa/runtime</filename> as long
-                as you extend <filename>BBPATH</filename>.
-                Just remember that filenames need to map directory to test
-                (module) names and you not use module names that collide with
-                existing core tests.
+                New tests for additional functionality outside of the core
+                should be added to the layer that adds the functionality, in
+                <filename>&lt;layer&gt;/lib/oeqa/runtime</filename> (as
+                long as
+                <ulink url='&YOCTO_DOCS_REF_URL;#var-BBPATH'><filename>BBPATH</filename></ulink>
+                is extended in the layer's
+                <filename>layer.conf</filename> file as normal).
+                Just remember that filenames need to map directly to test
+                (module) names and that you do not use module names that
+                collide with existing core tests.
             </para>
 
             <para>
@@ -4950,8 +5232,11 @@
         </para>
 
         <para>
+            For more information on installing and running Toaster, see the
+            "<ulink url='https://wiki.yoctoproject.org/wiki/Web_Hob#Installation_and_Running'>Installation and Running</ulink>"
+            section of the "Toaster" wiki page.
             For complete information on the API and its search operation
-            URI, parameters, and reposes, see the
+            URI, parameters, and responses, see the
             <ulink url='https://wiki.yoctoproject.org/wiki/REST_API_Contracts'>REST API Contracts</ulink>
             Wiki page.
         </para>

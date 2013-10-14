@@ -12,7 +12,9 @@
 # ${APPEND} - an override list of append strings for each label
 # ${SYSLINUX_OPTS} - additional options to add to the syslinux file ';' delimited
 # ${SYSLINUX_SPLASH} - A background for the vga boot menu if using the boot menu
+# ${SYSLINUX_DEFAULT_CONSOLE} - set to "console=ttyX" to change kernel boot default console
 # ${SYSLINUX_SERIAL} - Set an alternate serial port or turn off serial with empty string
+# ${SYSLINUX_SERIAL_TTY} - Set alternate console=tty... kernel boot argument
 
 do_bootimg[depends] += "syslinux:do_populate_sysroot \
                         syslinux-native:do_populate_sysroot"
@@ -21,7 +23,11 @@ SYSLINUXCFG  = "${S}/syslinux.cfg"
 
 ISOLINUXDIR = "/isolinux"
 SYSLINUXDIR = "/"
+# The kernel has an internal default console, which you can override with
+# a console=...some_tty...
+SYSLINUX_DEFAULT_CONSOLE ?= ""
 SYSLINUX_SERIAL ?= "0 115200"
+SYSLINUX_SERIAL_TTY ?= "ttyS0,115200"
 ISO_BOOTIMG = "isolinux/isolinux.bin"
 ISO_BOOTCAT = "isolinux/boot.cat"
 MKISOFS_OPTIONS = "-no-emul-boot -boot-load-size 4 -boot-info-table"
@@ -36,28 +42,27 @@ syslinux_populate() {
 
 	# Install the config files
 	install -m 0644 ${SYSLINUXCFG} ${DEST}${BOOTDIR}/${CFGNAME}
+	if [ "${AUTO_SYSLINUXMENU}" = 1 ] ; then
+		install -m 0644 ${STAGING_DATADIR}/syslinux/vesamenu.c32 ${DEST}${BOOTDIR}/vesamenu.c32
+		install -m 0444 ${STAGING_DATADIR}/syslinux/libcom32.c32 ${DEST}${BOOTDIR}/libcom32.c32
+		install -m 0444 ${STAGING_DATADIR}/syslinux/libutil.c32 ${DEST}${BOOTDIR}/libutil.c32
+		if [ "${SYSLINUX_SPLASH}" != "" ] ; then
+			install -m 0644 ${SYSLINUX_SPLASH} ${DEST}${BOOTDIR}/splash.lss
+		fi
+	fi
 }
 
 syslinux_iso_populate() {
-	syslinux_populate ${ISODIR} ${ISOLINUXDIR} isolinux.cfg
-	install -m 0644 ${STAGING_DATADIR}/syslinux/isolinux.bin ${ISODIR}${ISOLINUXDIR}
-	if [ "${AUTO_SYSLINUXMENU}" = 1 ] ; then
-		install -m 0644 ${STAGING_DATADIR}/syslinux/vesamenu.c32 ${ISODIR}${ISOLINUXDIR}/vesamenu.c32
-		if [ "${SYSLINUX_SPLASH}" != "" ] ; then
-			install -m 0644 ${SYSLINUX_SPLASH} ${ISODIR}${ISOLINUXDIR}/splash.lss
-		fi
-	fi
+	iso_dir=$1
+	syslinux_populate $iso_dir ${ISOLINUXDIR} isolinux.cfg
+	install -m 0644 ${STAGING_DATADIR}/syslinux/isolinux.bin $iso_dir${ISOLINUXDIR}
+	install -m 0644 ${STAGING_DATADIR}/syslinux/ldlinux.c32 $iso_dir${ISOLINUXDIR}
 }
 
 syslinux_hddimg_populate() {
-	syslinux_populate ${HDDDIR} ${SYSLINUXDIR} syslinux.cfg
-	install -m 0444 ${STAGING_DATADIR}/syslinux/ldlinux.sys ${HDDDIR}${SYSLINUXDIR}/ldlinux.sys
-	if [ "${AUTO_SYSLINUXMENU}" = 1 ] ; then
-		install -m 0644 ${STAGING_DATADIR}/syslinux/vesamenu.c32 ${HDDDIR}${SYSLINUXDIR}/vesamenu.c32
-		if [ "${SYSLINUX_SPLASH}" != "" ] ; then
-			install -m 0644 ${SYSLINUX_SPLASH} ${HDDDIR}${SYSLINUXDIR}/splash.lss
-		fi
-	fi
+	hdd_dir=$1
+	syslinux_populate $hdd_dir ${SYSLINUXDIR} syslinux.cfg
+	install -m 0444 ${STAGING_DATADIR}/syslinux/ldlinux.sys $hdd_dir${SYSLINUXDIR}/ldlinux.sys
 }
 
 syslinux_hddimg_install() {
@@ -105,6 +110,8 @@ python build_syslinux_cfg () {
             cfgfile.write('%s\n' % opt)
 
     cfgfile.write('ALLOWOPTIONS 1\n');
+    syslinux_default_console = d.getVar('SYSLINUX_DEFAULT_CONSOLE', True)
+    syslinux_serial_tty = d.getVar('SYSLINUX_SERIAL_TTY', True)
     syslinux_serial = d.getVar('SYSLINUX_SERIAL', True)
     if syslinux_serial:
         cfgfile.write('SERIAL %s\n' % syslinux_serial)
@@ -147,10 +154,10 @@ python build_syslinux_cfg () {
         localdata.setVar('OVERRIDES', label + ':' + overrides)
         bb.data.update_data(localdata)
     
-        btypes = [ [ "", "console=tty0" ] ]
+        btypes = [ [ "", syslinux_default_console ] ]
         if menu and syslinux_serial:
-            btypes = [ [ "Graphics console ", " console=tty0" ],
-                [ "Serial console ",  " console=ttyS0,115200" ] ]
+            btypes = [ [ "Graphics console ", syslinux_default_console  ],
+                [ "Serial console ", syslinux_serial_tty ] ]
 
         for btype in btypes:
             cfgfile.write('LABEL %s%s\nKERNEL /vmlinuz\n' % (btype[0], label))

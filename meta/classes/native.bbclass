@@ -54,7 +54,7 @@ DEPENDS_GETTEXT = "gettext-native"
 PTEST_ENABLED = "0"
 
 # Don't use site files for native builds
-export CONFIG_SITE = ""
+export CONFIG_SITE = "${COREBASE}/meta/site/native"
 
 # set the compiler as well. It could have been set to something else
 export CC = "${CCACHE}${HOST_PREFIX}gcc ${HOST_CC_ARCH}"
@@ -157,6 +157,7 @@ do_package_write_ipk[noexec] = "1"
 do_package_write_deb[noexec] = "1"
 do_package_write_rpm[noexec] = "1"
 
+do_packagedata[stamp-extra-info] = ""
 do_populate_sysroot[stamp-extra-info] = ""
 
 USE_NLS = "no"

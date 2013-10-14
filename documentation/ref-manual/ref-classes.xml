@@ -86,9 +86,9 @@
                 the <filename><link linkend='var-EXTRA_OEMAKE'>EXTRA_OEMAKE</link></filename> variable.
                 </para></listitem>
             <listitem><para><filename>do_install</filename> &dash; Runs <filename>make install</filename>
-                and passes a destination directory option, which takes its value
-                from the standard
-                <filename><link linkend='var-DESTDIR'>DESTDIR</link></filename> variable.
+                and passes in
+                <filename>${</filename><link linkend='var-D'><filename>D</filename></link><filename>}</filename>
+                as <filename>DESTDIR</filename>.
                 </para></listitem>
         </itemizedlist>
     </para>
@@ -341,9 +341,9 @@
         on the development host that can be used by Smart, you can
         install packages from the feed while you are running the image
         on the target (i.e. runtime installation of packages).
-        For information on how to set up this repository, see the
-        "<ulink url='&YOCTO_DOCS_DEV_URL;#setting-up-runtime-package-management'>Setting Up Runtime Package Management</ulink>"
-         in the Yocto Project Development Manual.
+        For more information, see the
+        "<ulink url='&YOCTO_DOCS_DEV_URL;#using-runtime-package-management'>Using Runtime Package Management</ulink>"
+         section in the Yocto Project Development Manual.
     </para>
 
     <para>
@@ -797,6 +797,21 @@
             <listitem><para><emphasis><filename>perms:</filename></emphasis>
                 Currently, this check is unused but reserved.
                 </para></listitem>
+            <listitem><para><emphasis><filename>version-going-backwards:</filename></emphasis>
+                If Build History is enabled, reports when a package
+                being written out has a lower version than the previously
+                written package under the same name.
+                If you are placing output packages into a feed and
+                upgrading packages on a target system using that feed, the
+                version of a package going backwards can result in the target
+                system not correctly upgrading to the "new" version of the
+                package.
+                <note>
+                    If you are not using runtime package management on your
+                    target system, then you do not need to worry about
+                    this situation.
+                </note>
+                </para></listitem>
         </itemizedlist>
     </para>
 </section>
@@ -940,8 +955,12 @@
 
     <para>
         You can use this class to enable running a series of automated tests
-        for QEMU images.
-        The class handles loading the tests and starting the QEMU image.
+        for images.
+        The class handles loading the tests and starting the image.
+        <note>
+            Currently, there is only support for running these tests
+            under QEMU.
+        </note>
     </para>
 
     <para>
@@ -950,15 +969,13 @@
         The tests are commands that run on the target system over
         <filename>ssh</filename>.
         they are written in Python and make use of the
-        <filename>unittest modulebuild</filename> software.
+        <filename>unittest</filename> module.
     </para>
 
     <para>
         For information on how to enable, run, and create new tests, see the
-        "<ulink url='running-and-writing-tests-for-a-qemu-image'>Running and Writing Tests for a QEMU Image</ulink>"
-        section and the
-        <ulink url='https://wiki.yoctoproject.org/wiki/Image_tests'>Image Tests</ulink>
-        Wiki page.
+        "<ulink url='&YOCTO_DOCS_DEV_URL;#performing-automated-runtime-testing'>Performing Automated Runtime Testing</ulink>"
+        section.
     </para>
 </section>
 
@@ -979,6 +996,7 @@
         allarch.bbclass
         archive*.bbclass
         binconfig.bbclass
+        bin_package.bbclass
         blacklist.bbclass
         bootimg.bbclass
         boot-directdisk.bbclass
@@ -987,6 +1005,7 @@
         buildstats.bbclass
         ccache.bbclass
         chrpath.bbclass
+        clutter.bbclass
         cmake.bbclass
         cml1.bbclass
         copyleft_compliance.bbclass
@@ -996,7 +1015,9 @@
         crosssdk.bbclass
         deploy.bbclass
         distrodata.bbclass
+        distro_features_check.bbclass
         dummy.bbclass
+        extrausers.bbclass
         fontcache.bbclass
         gconf.bbclass
         gettext.bbclass
@@ -1015,12 +1036,11 @@
         image-mklibs.bbclass
         image-prelink.bbclass
         image-swab.bbclass
-        imagetest-dummy.bbclass
-        imagetest-qemu.bbclass
         image_types.bbclass
         image_types_uboot.bbclass
         insserv.bbclass
         kernel-arch.bbclass
+        kernel-module-split.bbclass
         kernel-yocto.bbclass
         lib_package.bbclass
         linux-kernel-base.bbclass
@@ -1061,6 +1081,7 @@
         sip.bbclass
         siteconfig.bbclass
         sourcepkg.bbclass
+        spdx.bbclass
         sstate.bbclass
         staging.bbclass
         syslinux.bbclass
@@ -1069,8 +1090,11 @@
         tinderclient.bbclass
         toolchain-scripts.bbclass
         typecheck.bbclass
+        uboot-config.bbclass
         utility-tasks.bbclass
         utils.bbclass
+        vala.bbclass
+        waf.bbclass
 -->
 
 

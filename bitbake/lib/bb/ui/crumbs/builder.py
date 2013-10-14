@@ -31,6 +31,7 @@ import re
 import logging
 import sys
 import signal
+import time
 from bb.ui.crumbs.imageconfigurationpage import ImageConfigurationPage
 from bb.ui.crumbs.recipeselectionpage import RecipeSelectionPage
 from bb.ui.crumbs.packageselectionpage import PackageSelectionPage
@@ -197,7 +198,7 @@ class Configuration:
         handler.set_var_in_file("BBLAYERS", self.layers, "bblayers.conf")
         # local.conf
         if not defaults:
-            handler.set_var_in_file("MACHINE", self.curr_mach, "local.conf")
+            handler.early_assign_var_in_file("MACHINE", self.curr_mach, "local.conf")
         handler.set_var_in_file("DISTRO", self.curr_distro, "local.conf")
         handler.set_var_in_file("DL_DIR", self.dldir, "local.conf")
         handler.set_var_in_file("SSTATE_DIR", self.sstatedir, "local.conf")
@@ -217,7 +218,7 @@ class Configuration:
         handler.set_var_in_file("SDKMACHINE", self.curr_sdk_machine, "local.conf")
         handler.set_var_in_file("CONF_VERSION", self.conf_version, "local.conf")
         handler.set_var_in_file("LCONF_VERSION", self.lconf_version, "bblayers.conf")
-        handler.set_var_in_file("EXTRA_SETTING", self.extra_setting, "local.conf")
+        handler.set_extra_config(self.extra_setting)
         handler.set_var_in_file("TOOLCHAIN_BUILD", self.toolchain_build, "local.conf")
         handler.set_var_in_file("IMAGE_FSTYPES", self.image_fstypes, "local.conf")
         if not defaults:
@@ -1466,3 +1467,10 @@ class Builder(gtk.Window):
 
     def get_topdir(self):
         return self.handler.get_topdir()
+
+    def wait(self, delay):
+        time_start = time.time()
+        time_end = time_start + delay
+        while time_end > time.time():
+            while gtk.events_pending():
+                gtk.main_iteration()

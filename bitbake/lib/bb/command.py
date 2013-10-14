@@ -86,6 +86,8 @@ class Command:
 
     def runAsyncCommand(self):
         try:
+            if self.cooker.state == bb.cooker.state.error:
+                return False
             if self.currentAsyncCommand is not None:
                 (command, options) = self.currentAsyncCommand
                 commandmethod = getattr(CommandsAsync, command)
@@ -240,6 +242,13 @@ class CommandsSync:
         default_file = params[2]
         op = params[3]
         command.cooker.modifyConfigurationVar(var, val, default_file, op)
+
+    def removeVarFile(self, command, params):
+        """
+        Remove a variable declaration from a file
+        """
+        var = params[0]
+        command.cooker.removeConfigurationVar(var)
 
     def createConfigFile(self, command, params):
         """

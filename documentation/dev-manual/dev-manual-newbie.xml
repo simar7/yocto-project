@@ -254,9 +254,9 @@
                 <listitem><para><ulink url='http://sitaramc.github.com/gitolite/master-toc.html'>The <filename>gitolite</filename> master index</ulink>:
                     All topics for <filename>gitolite</filename>.
                     </para></listitem>
-                <listitem><para><ulink url='http://hjemli.net/git/cgit/tree/README'><filename>cgit</filename> index</ulink>:
-                    A <filename>README</filename> file on how to create a
-                    fast web interface for Git.</para></listitem>
+                <listitem><para><ulink url='https://git.wiki.kernel.org/index.php/Interfaces,_frontends,_and_tools'>Interfaces, frontends, and tools</ulink>:
+                    Documentation on how to create interfaces and frontends
+                    for Git.</para></listitem>
             </itemizedlist>
         </note>
     </section>
@@ -275,9 +275,8 @@
         </para>
 
         <para>
-            See "<ulink url='http://autobuilder.yoctoproject.org:8010/'>Welcome to the buildbot for the Yocto Project</ulink>"
-            for the Yocto Project's reference implementation that uses
-            buildbot.
+            See "<ulink url='http://autobuilder.yoctoproject.org'>Yocto Project Autobuilder</ulink>"
+            for more information and links to buildbot.
             The Yocto Project team has found this implementation
             works well in this role.
             A public example of this is the Yocto Project
@@ -394,7 +393,7 @@
                     For some guidance on mailing lists to use, see the list in the
                     "<link linkend='how-to-submit-a-change'>How to Submit a Change</link>"
                     section.
-                    For a description of the available mailing lists, see
+                    For a description of the available mailing lists, see the
                     "<ulink url='&YOCTO_DOCS_REF_URL;#resources-mailinglist'>Mailing Lists</ulink>"
                     section in the Yocto Project Reference Manual.
                     </para></listitem>
@@ -615,7 +614,7 @@
                 "<ulink url='&YOCTO_DOCS_BSP_URL;#bsp-layers'>BSP Layers</ulink>"
                 section in the Yocto Project Board Support Packages (BSP)
                 Developer's Guide.</para></listitem>
-            <listitem><para id='meta-toochain'><emphasis>Meta-Toolchain:</emphasis>
+            <listitem><para id='meta-toolchain'><emphasis>Meta-Toolchain:</emphasis>
                 A term sometimes used for
                 <link linkend='cross-development-toolchain'>Cross-Development Toolchain</link>.
                 </para></listitem>
@@ -689,7 +688,7 @@
                 For example, downloading and unpacking <filename>&YOCTO_POKY_TARBALL;</filename>
                 results in a Source Directory whose top-level folder is named
                 <filename>&YOCTO_POKY;</filename>.
-                If you create a local copy of the Git repository, then you can name the repository
+                If you create a local copy of the Git repository, you can name the repository
                 anything you like.
                 Throughout much of the documentation, <filename>poky</filename> is used as the name of
                 the top-level folder of the local copy of the poky Git repository.
@@ -865,8 +864,8 @@
             It is important to understand that Git tracks content change and not files.
             Git uses "branches" to organize different development efforts.
             For example, the <filename>poky</filename> repository has
-            <filename>bernard</filename>,
-            <filename>edison</filename>, <filename>denzil</filename>, <filename>danny</filename>
+            <filename>denzil</filename>, <filename>danny</filename>,
+            <filename>dylan</filename>, <filename>dora</filename>,
             and <filename>master</filename> branches among others.
             You can see all the branches by going to
             <ulink url='&YOCTO_GIT_URL;/cgit.cgi/poky/'></ulink> and
@@ -1233,6 +1232,10 @@
                 occurred.</para></listitem>
             <listitem><para>Be sure to indicate the Severity of the bug.
                 Severity communicates how the bug impacted your work.</para></listitem>
+            <listitem><para>Select the appropriate "Documentation change" item
+                for the bug.
+                Fixing a bug may or may not affect the Yocto Project
+                documentation.</para></listitem>
             <listitem><para>Provide a brief summary of the issue.
                 Try to limit your summary to just a line or two and be sure to capture the
                 essence of the issue.</para></listitem>

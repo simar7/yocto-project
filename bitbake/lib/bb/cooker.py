@@ -61,7 +61,7 @@ class CollectionError(bb.BBHandledException):
     """
 
 class state:
-    initial, parsing, running, shutdown, forceshutdown, stopped = range(6)
+    initial, parsing, running, shutdown, forceshutdown, stopped, error = range(7)
 
 
 class SkippedPackage:
@@ -193,7 +193,10 @@ class BBCooker:
         if op == "append":
             self.appendConfigurationVar(var, val, default_file)
         elif op == "set":
-            self.saveConfigurationVar(var, val, default_file)
+            self.saveConfigurationVar(var, val, default_file, "=")
+        elif op == "earlyAssign":
+            self.saveConfigurationVar(var, val, default_file, "?=")
+
 
     def appendConfigurationVar(self, var, val, default_file):
         #add append var operation to the end of default_file
@@ -207,7 +210,7 @@ class BBCooker:
         for c in contents:
             total += c
 
-        total += "#added by bitbake"
+        total += "#added by hob"
         total += "\n%s += \"%s\"\n" % (var, val)
 
         with open(default_file, 'w') as f:
@@ -218,7 +221,7 @@ class BBCooker:
         loginfo = {"op":append, "file":default_file, "line":total.count("\n")}
         self.data.appendVar(var, val, **loginfo)
 
-    def saveConfigurationVar(self, var, val, default_file):
+    def saveConfigurationVar(self, var, val, default_file, op):
 
         replaced = False
         #do not save if nothing changed
@@ -260,8 +263,8 @@ class BBCooker:
                     #check if the variable was saved before in the same way
                     #if true it replace the place where the variable was declared
                     #else it comments it
-                    if contents[begin_line-1]== "#added by bitbake\n":
-                        contents[begin_line] = "%s = \"%s\"\n" % (var, val)
+                    if contents[begin_line-1]== "#added by hob\n":
+                        contents[begin_line] = "%s %s \"%s\"\n" % (var, op, val)
                         replaced = True
                     else:
                         for ii in range(begin_line, end_line):
@@ -290,8 +293,8 @@ class BBCooker:
                 total += c
 
             #add the variable on a single line, to be easy to replace the second time
-            total += "\n#added by bitbake"
-            total += "\n%s = \"%s\"\n" % (var, val)
+            total += "\n#added by hob"
+            total += "\n%s %s \"%s\"\n" % (var, op, val)
 
             with open(default_file, 'w') as f:
                 f.write(total)
@@ -300,6 +303,44 @@ class BBCooker:
             #add to history
             loginfo = {"op":set, "file":default_file, "line":total.count("\n")}
             self.data.setVar(var, val, **loginfo)
+
+    def removeConfigurationVar(self, var):
+        conf_files = self.data.varhistory.get_variable_files(var)
+        topdir = self.data.getVar("TOPDIR")
+
+        for conf_file in conf_files:
+            if topdir in conf_file:
+                with open(conf_file, 'r') as f:
+                    contents = f.readlines()
+                f.close()
+
+                lines = self.data.varhistory.get_variable_lines(var, conf_file)
+                for line in lines:
+                    total = ""
+                    i = 0
+                    for c in contents:
+                        total += c
+                        i = i + 1
+                        if i==int(line):
+                            end_index = len(total)
+                    index = total.rfind(var, 0, end_index)
+
+                    begin_line = total.count("\n",0,index)
+
+                    #check if the variable was saved before in the same way
+                    if contents[begin_line-1]== "#added by hob\n":
+                        contents[begin_line-1] = contents[begin_line] = "\n"
+                    else:
+                        contents[begin_line] = "\n"
+                    #remove var from history
+                    self.data.varhistory.del_var_history(var, conf_file, line)
+
+                total = ""
+                for c in contents:
+                    total += c
+                with open(conf_file, 'w') as f:
+                    f.write(total)
+                f.close()
 
     def createConfigFile(self, name):
         path = os.getcwd()
@@ -1280,6 +1321,7 @@ class BBCooker:
             self.prhost = prserv.serv.auto_start(self.data)
         except prserv.serv.PRServiceConfigError:
             bb.event.fire(CookerExit(), self.event_data)
+            self.state = state.error
         return
 
     def post_serve(self):
