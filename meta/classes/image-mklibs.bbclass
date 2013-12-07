@@ -9,7 +9,7 @@ mklibs_optimize_image_doit() {
 	du -bs > ${WORKDIR}/mklibs/du.before.mklibs.txt
 	for i in `find .`; do file $i; done \
 		| grep ELF \
-		| grep "LSB executable" \
+		| grep "LSB *executable" \
 		| grep "dynamically linked" \
 		| sed "s/:.*//" \
 		| sed "s+^\./++" \
@@ -40,6 +40,7 @@ mklibs_optimize_image_doit() {
 		--ldlib ${dynamic_loader} \
 		--libdir ${baselib} \
 		--sysroot ${PKG_CONFIG_SYSROOT_DIR} \
+		--gcc-options "--sysroot=${PKG_CONFIG_SYSROOT_DIR}" \
 		--root ${IMAGE_ROOTFS} \
 		--target `echo ${TARGET_PREFIX} | sed 's/-$//' ` \
 		-d ${WORKDIR}/mklibs/dest \

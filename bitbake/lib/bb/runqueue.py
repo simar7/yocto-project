@@ -98,26 +98,49 @@ class RunQueueScheduler(object):
         """
         self.rq = runqueue
         self.rqdata = rqdata
-        numTasks = len(self.rqdata.runq_fnid)
+        self.numTasks = len(self.rqdata.runq_fnid)
 
         self.prio_map = []
-        self.prio_map.extend(range(numTasks))
+        self.prio_map.extend(range(self.numTasks))
+
+        self.buildable = []
+        self.stamps = {}
+        for taskid in xrange(self.numTasks):
+            fn = self.rqdata.taskData.fn_index[self.rqdata.runq_fnid[taskid]]
+            taskname = self.rqdata.runq_task[taskid]
+            self.stamps[taskid] = bb.build.stampfile(taskname, self.rqdata.dataCache, fn)
+            if self.rq.runq_buildable[taskid] == 1:
+                self.buildable.append(taskid)
+
+        self.rev_prio_map = None
 
     def next_buildable_task(self):
         """
         Return the id of the first task we find that is buildable
         """
-        for tasknum in xrange(len(self.rqdata.runq_fnid)):
-            taskid = self.prio_map[tasknum]
-            if self.rq.runq_running[taskid] == 1:
-                continue
-            if self.rq.runq_buildable[taskid] == 1:
-                fn = self.rqdata.taskData.fn_index[self.rqdata.runq_fnid[taskid]]
-                taskname = self.rqdata.runq_task[taskid]
-                stamp = bb.build.stampfile(taskname, self.rqdata.dataCache, fn)
-                if stamp in self.rq.build_stamps.values():
+        self.buildable = [x for x in self.buildable if not self.rq.runq_running[x] == 1]
+        if not self.buildable:
+            return None
+        if len(self.buildable) == 1:
+            return self.buildable[0]
+
+        if not self.rev_prio_map:
+            self.rev_prio_map = range(self.numTasks)
+            for taskid in xrange(self.numTasks):
+                self.rev_prio_map[self.prio_map[taskid]] = taskid
+
+        best = None
+        bestprio = None
+        for taskid in self.buildable:
+            prio = self.rev_prio_map[taskid]
+            if not bestprio or bestprio > prio:
+                stamp = self.stamps[taskid]
+                if stamp in self.rq.build_stamps.itervalues():
                     continue
-                return taskid
+                bestprio = prio
+                best = taskid
+
+        return best
 
     def next(self):
         """
@@ -125,6 +148,9 @@ class RunQueueScheduler(object):
         """
         if self.rq.stats.active < self.rq.number_tasks:
             return self.next_buildable_task()
+
+    def newbuilable(self, task):
+        self.buildable.append(task)
 
 class RunQueueSchedulerSpeed(RunQueueScheduler):
     """
@@ -137,9 +163,7 @@ class RunQueueSchedulerSpeed(RunQueueScheduler):
         """
         The priority map is sorted by task weight.
         """
-
-        self.rq = runqueue
-        self.rqdata = rqdata
+        RunQueueScheduler.__init__(self, runqueue, rqdata)
 
         sortweight = sorted(copy.deepcopy(self.rqdata.runq_weight))
         copyweight = copy.deepcopy(self.rqdata.runq_weight)
@@ -1116,6 +1140,7 @@ class RunQueueExecute:
         self.runq_complete = []
 
         self.build_stamps = {}
+        self.build_stamps2 = []
         self.failed_fnids = []
 
         self.stampcache = {}
@@ -1128,6 +1153,7 @@ class RunQueueExecute:
 
         # self.build_stamps[pid] may not exist when use shared work directory.
         if task in self.build_stamps:
+            self.build_stamps2.remove(self.build_stamps[task])
             del self.build_stamps[task]
 
         if status != 0:
@@ -1204,6 +1230,8 @@ class RunQueueExecuteTasks(RunQueueExecute):
 
         self.stampcache = {}
 
+        initial_covered = self.rq.scenequeue_covered.copy()
+
         # Mark initial buildable tasks
         for task in xrange(self.stats.total):
             self.runq_running.append(0)
@@ -1257,12 +1285,27 @@ class RunQueueExecuteTasks(RunQueueExecute):
             except TypeError:
                 covered_remove = bb.utils.better_eval(call2, locs)
 
-        for task in covered_remove:
+        def removecoveredtask(task):
             fn = self.rqdata.taskData.fn_index[self.rqdata.runq_fnid[task]]
             taskname = self.rqdata.runq_task[task] + '_setscene'
             bb.build.del_stamp(taskname, self.rqdata.dataCache, fn)
-            logger.debug(1, 'Not skipping task %s due to setsceneverify', task)
             self.rq.scenequeue_covered.remove(task)
+
+        toremove = covered_remove
+        for task in toremove:
+            logger.debug(1, 'Not skipping task %s due to setsceneverify', task)
+        while toremove:
+            covered_remove = []
+            for task in toremove:
+                removecoveredtask(task)
+                for deptask in self.rqdata.runq_depends[task]:
+                    if deptask not in self.rq.scenequeue_covered:
+                        continue
+                    if deptask in toremove or deptask in covered_remove or deptask in initial_covered:
+                        continue
+                    logger.debug(1, 'Task %s depends on task %s so not skipping' % (task, deptask))
+                    covered_remove.append(deptask)
+            toremove = covered_remove
 
         logger.debug(1, 'Full skip list %s', self.rq.scenequeue_covered)
 
@@ -1300,6 +1343,10 @@ class RunQueueExecuteTasks(RunQueueExecute):
                     schedulers.add(getattr(module, name))
         return schedulers
 
+    def setbuildable(self, task):
+        self.runq_buildable[task] = 1
+        self.sched.newbuilable(task)
+
     def task_completeoutright(self, task):
         """
         Mark a task as completed
@@ -1317,7 +1364,7 @@ class RunQueueExecuteTasks(RunQueueExecute):
                 if self.runq_complete[dep] != 1:
                     alldeps = 0
             if alldeps == 1:
-                self.runq_buildable[revdep] = 1
+                self.setbuildable(revdep)
                 fn = self.rqdata.taskData.fn_index[self.rqdata.runq_fnid[revdep]]
                 taskname = self.rqdata.runq_task[revdep]
                 logger.debug(1, "Marking task %s (%s, %s) as buildable", revdep, fn, taskname)
@@ -1341,7 +1388,7 @@ class RunQueueExecuteTasks(RunQueueExecute):
 
     def task_skip(self, task, reason):
         self.runq_running[task] = 1
-        self.runq_buildable[task] = 1
+        self.setbuildable(task)
         bb.event.fire(runQueueTaskSkipped(task, self.stats, self.rq, reason), self.cfgData)
         self.task_completeoutright(task)
         self.stats.taskCompleted()
@@ -1390,17 +1437,20 @@ class RunQueueExecuteTasks(RunQueueExecute):
                 startevent = runQueueTaskStarted(task, self.stats, self.rq)
                 bb.event.fire(startevent, self.cfgData)
 
+            taskdepdata = self.build_taskdepdata(task)
+
             taskdep = self.rqdata.dataCache.task_deps[fn]
-            if 'fakeroot' in taskdep and taskname in taskdep['fakeroot']:
+            if 'fakeroot' in taskdep and taskname in taskdep['fakeroot'] and not self.cooker.configuration.dry_run:
                 if not self.rq.fakeworker:
                     self.rq.start_fakeworker(self)
-                self.rq.fakeworker.stdin.write("<runtask>" + pickle.dumps((fn, task, taskname, False, self.cooker.collection.get_file_appends(fn))) + "</runtask>")
+                self.rq.fakeworker.stdin.write("<runtask>" + pickle.dumps((fn, task, taskname, False, self.cooker.collection.get_file_appends(fn), taskdepdata)) + "</runtask>")
                 self.rq.fakeworker.stdin.flush()
             else:
-                self.rq.worker.stdin.write("<runtask>" + pickle.dumps((fn, task, taskname, False, self.cooker.collection.get_file_appends(fn))) + "</runtask>")
+                self.rq.worker.stdin.write("<runtask>" + pickle.dumps((fn, task, taskname, False, self.cooker.collection.get_file_appends(fn), taskdepdata)) + "</runtask>")
                 self.rq.worker.stdin.flush()
 
             self.build_stamps[task] = bb.build.stampfile(taskname, self.rqdata.dataCache, fn)
+            self.build_stamps2.append(self.build_stamps[task]) 
             self.runq_running[task] = 1
             self.stats.taskActive()
             if self.stats.active < self.number_tasks:
@@ -1425,6 +1475,26 @@ class RunQueueExecuteTasks(RunQueueExecute):
         self.rq.state = runQueueComplete
 
         return True
+
+    def build_taskdepdata(self, task):
+        taskdepdata = {}
+        next = self.rqdata.runq_depends[task]
+        next.add(task)
+        while next:
+            additional = []
+            for revdep in next:
+                fn = self.rqdata.taskData.fn_index[self.rqdata.runq_fnid[revdep]]
+                pn = self.rqdata.dataCache.pkg_fn[fn]
+                taskname = self.rqdata.runq_task[revdep]
+                deps = self.rqdata.runq_depends[revdep]
+                taskdepdata[revdep] = [pn, taskname, fn, deps]
+                for revdep2 in deps:
+                    if revdep2 not in taskdepdata:
+                        additional.append(revdep2)
+            next = additional
+
+        #bb.note("Task %s: " % task + str(taskdepdata).replace("], ", "],\n"))
+        return taskdepdata
 
 class RunQueueExecuteScenequeue(RunQueueExecute):
     def __init__(self, rq):
@@ -1736,10 +1806,10 @@ class RunQueueExecuteScenequeue(RunQueueExecute):
             if 'fakeroot' in taskdep and taskname in taskdep['fakeroot']:
                 if not self.rq.fakeworker:
                     self.rq.start_fakeworker(self)
-                self.rq.fakeworker.stdin.write("<runtask>" + pickle.dumps((fn, realtask, taskname, True, self.cooker.collection.get_file_appends(fn))) + "</runtask>")
+                self.rq.fakeworker.stdin.write("<runtask>" + pickle.dumps((fn, realtask, taskname, True, self.cooker.collection.get_file_appends(fn), None)) + "</runtask>")
                 self.rq.fakeworker.stdin.flush()
             else:
-                self.rq.worker.stdin.write("<runtask>" + pickle.dumps((fn, realtask, taskname, True, self.cooker.collection.get_file_appends(fn))) + "</runtask>")
+                self.rq.worker.stdin.write("<runtask>" + pickle.dumps((fn, realtask, taskname, True, self.cooker.collection.get_file_appends(fn), None)) + "</runtask>")
                 self.rq.worker.stdin.flush()
 
             self.runq_running[task] = 1

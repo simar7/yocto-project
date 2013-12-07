@@ -8,25 +8,27 @@
 # For the cross compiler, creates a tar.gz of our toolchain and sets
 # ICECC_VERSION accordingly.
 #
-#The class now handles all 3 different compile 'stages' (i.e native ,cross-kernel and target) creating the
-#necessary environment tar.gz file to be used by the remote machines.
-#It also supports meta-toolchain generation
+# The class now handles all 3 different compile 'stages' (i.e native ,cross-kernel and target) creating the
+# necessary environment tar.gz file to be used by the remote machines.
+# It also supports meta-toolchain generation
 #
-#If ICECC_PATH is not set in local.conf then the class will try to locate it using 'which'
-#but nothing is sure ;)
+# If ICECC_PATH is not set in local.conf then the class will try to locate it using 'bb.utils.which'
+# but nothing is sure ;)
 #
-#If ICECC_ENV_EXEC is set in local.conf should point to the icecc-create-env script provided by the user
-#or the default one provided by icecc-create-env.bb  will be used
-#(NOTE that this is a modified version of the script need it and *not the one that comes with icecc*
+# If ICECC_ENV_EXEC is set in local.conf, then it should point to the icecc-create-env script provided by the user
+# or the default one provided by icecc-create-env.bb will be used
+# (NOTE that this is a modified version of the script need it and *not the one that comes with icecc*
 #
-#User can specify if specific packages or packages belonging to class should not use icecc to distribute
-#compile jobs to remote machines, but handled localy, by defining ICECC_USER_CLASS_BL and ICECC_PACKAGE_BL
-#with the appropriate values in local.conf
+# User can specify if specific packages or packages belonging to class should not use icecc to distribute
+# compile jobs to remote machines, but handled locally, by defining ICECC_USER_CLASS_BL and ICECC_USER_PACKAGE_BL
+# with the appropriate values in local.conf. In addition the user can force to enable icecc for packages
+# which set an empty PARALLEL_MAKE variable by defining ICECC_USER_PACKAGE_WL.
+#
 #########################################################################################
 #Error checking is kept to minimum so double check any parameters you pass to the class
 ###########################################################################################
 
-BB_HASHBASE_WHITELIST += "ICECC_PARALLEL_MAKE ICECC_DISABLED"
+BB_HASHBASE_WHITELIST += "ICECC_PARALLEL_MAKE ICECC_DISABLED ICECC_USER_PACKAGE_BL ICECC_USER_CLASS_BL ICECC_USER_PACKAGE_WL"
 
 ICECC_ENV_EXEC ?= "${STAGING_BINDIR_NATIVE}/icecc-create-env"
 
@@ -41,14 +43,20 @@ def icecc_dep_prepend(d):
 DEPENDS_prepend += "${@icecc_dep_prepend(d)} "
 
 def get_cross_kernel_cc(bb,d):
-    kernel_cc = d.expand('${KERNEL_CC}')
+    kernel_cc = d.getVar('KERNEL_CC')
+
+    # evaluate the expression by the shell if necessary
+    if '`' in kernel_cc or '$(' in kernel_cc:
+        kernel_cc = os.popen("echo %s" % kernel_cc).read()[:-1]
+
+    kernel_cc = d.expand(kernel_cc)
     kernel_cc = kernel_cc.replace('ccache', '').strip()
     kernel_cc = kernel_cc.split(' ')[0]
     kernel_cc = kernel_cc.strip()
     return kernel_cc
 
 def get_icecc(d):
-    return d.getVar('ICECC_PATH') or os.popen("which icecc").read()[:-1]
+    return d.getVar('ICECC_PATH') or bb.utils.which(os.getenv("PATH"), "icecc")
 
 def create_path(compilers, bb, d):
     """
@@ -83,9 +91,13 @@ def create_path(compilers, bb, d):
     return staging
 
 def use_icc(bb,d):
+    # allarch recipes don't use compiler
+    if icc_is_allarch(bb, d):
+        return "no"
+
     package_tmp = d.expand('${PN}')
 
-    system_class_blacklist = [ "none" ] 
+    system_class_blacklist = [ "none" ]
     user_class_blacklist = (d.getVar('ICECC_USER_CLASS_BL') or "none").split()
     package_class_blacklist = system_class_blacklist + user_class_blacklist
 
@@ -98,6 +110,7 @@ def use_icc(bb,d):
     #for one reason or the other
     system_package_blacklist = [ "uclibc", "glibc", "gcc", "bind", "u-boot", "dhcp-forwarder", "enchant", "connman", "orbit2" ]
     user_package_blacklist = (d.getVar('ICECC_USER_PACKAGE_BL') or "").split()
+    user_package_whitelist = (d.getVar('ICECC_USER_PACKAGE_WL') or "").split()
     package_blacklist = system_package_blacklist + user_package_blacklist
 
     for black in package_blacklist:
@@ -105,11 +118,20 @@ def use_icc(bb,d):
             #bb.note(package_tmp, ' found in blacklist, disable icecc')
             return "no"
 
+    for white in user_package_whitelist:
+        if white in package_tmp:
+            bb.debug(1, package_tmp, " ", d.expand('${PV})'), " found in whitelist, enable icecc")
+            return "yes"
+
     if d.getVar('PARALLEL_MAKE') == "":
-        bb.note(package_tmp, " ", d.expand('${PV}'), " has empty PARALLEL_MAKE, disable icecc")
+        bb.debug(1, package_tmp, " ", d.expand('${PV}'), " has empty PARALLEL_MAKE, disable icecc")
         return "no"
 
     return "yes"
+
+def icc_is_allarch(bb, d):
+    return \
+        bb.data.inherits_class("allarch", d);
 
 def icc_is_kernel(bb, d):
     return \
@@ -125,7 +147,8 @@ def icc_version(bb, d):
         return ""
 
     parallel = d.getVar('ICECC_PARALLEL_MAKE') or ""
-    d.setVar("PARALLEL_MAKE", parallel)
+    if not d.getVar('PARALLEL_MAKE') == "":
+        d.setVar("PARALLEL_MAKE", parallel)
 
     if icc_is_native(bb, d):
         archive_name = "local-host-env"
@@ -152,7 +175,7 @@ def icc_path(bb,d):
 
     else:
         prefix = d.expand('${HOST_PREFIX}')
-        return create_path( [prefix+"gcc", prefix+"g++"], bb, d)      
+        return create_path( [prefix+"gcc", prefix+"g++"], bb, d)
 
 def icc_get_external_tool(bb, d, tool):
     external_toolchain_bindir = d.expand('${EXTERNAL_TOOLCHAIN}${bindir_cross}')
@@ -161,9 +184,9 @@ def icc_get_external_tool(bb, d, tool):
 
 def icc_get_tool(bb, d, tool):
     if icc_is_native(bb, d):
-        return os.popen("which %s" % tool).read()[:-1]
+        return bb.utils.which(os.getenv("PATH"), tool)
     elif icc_is_kernel(bb, d):
-        return os.popen("which %s" % get_cross_kernel_cc(bb, d)).read()[:-1]
+        return bb.utils.which(os.getenv("PATH"), get_cross_kernel_cc(bb, d))
     else:
         ice_dir = d.expand('${STAGING_BINDIR_TOOLCHAIN}')
         target_sys = d.expand('${TARGET_SYS}')
@@ -188,6 +211,25 @@ def icc_get_and_check_tool(bb, d, tool):
     else:
         return t
 
+wait_for_file() {
+    local TIME_ELAPSED=0
+    local FILE_TO_TEST=$1
+    local TIMEOUT=$2
+    until [ -f "$FILE_TO_TEST" ]
+    do
+        TIME_ELAPSED=`expr $TIME_ELAPSED + 1`
+        if [ $TIME_ELAPSED -gt $TIMEOUT ]
+        then
+            return 1
+        fi
+        sleep 1
+    done
+}
+
+def set_icecc_env():
+    # dummy python version of set_icecc_env
+    return
+
 set_icecc_env() {
     if [ "x${ICECC_DISABLED}" != "x" ]
     then
@@ -196,12 +238,14 @@ set_icecc_env() {
     ICECC_VERSION="${@icc_version(bb, d)}"
     if [ "x${ICECC_VERSION}" = "x" ]
     then
+        bbwarn "Cannot use icecc: could not get ICECC_VERSION"
         return
     fi
 
     ICE_PATH="${@icc_path(bb, d)}"
     if [ "x${ICE_PATH}" = "x" ]
     then
+        bbwarn "Cannot use icecc: could not get ICE_PATH"
         return
     fi
 
@@ -209,6 +253,7 @@ set_icecc_env() {
     ICECC_CXX="${@icc_get_and_check_tool(bb, d, "g++")}"
     if [ ! -x "${ICECC_CC}" -o ! -x "${ICECC_CXX}" ]
     then
+        bbwarn "Cannot use icecc: could not get ICECC_CC or ICECC_CXX"
         return
     fi
 
@@ -216,6 +261,7 @@ set_icecc_env() {
     ICECC_VERSION=`echo ${ICECC_VERSION} | sed -e "s/@VERSION@/$ICE_VERSION/g"`
     if [ ! -x "${ICECC_ENV_EXEC}" ]
     then
+        bbwarn "Cannot use icecc: invalid ICECC_ENV_EXEC"
         return
     fi
 
@@ -225,10 +271,22 @@ set_icecc_env() {
         ICECC_AS="`which as`"
     fi
 
-    if [ ! -r "${ICECC_VERSION}" ]
+    if [ ! -f "${ICECC_VERSION}.done" ]
     then
         mkdir -p "`dirname "${ICECC_VERSION}"`"
-        ${ICECC_ENV_EXEC} "${ICECC_CC}" "${ICECC_CXX}" "${ICECC_AS}" "${ICECC_VERSION}"
+
+        # the ICECC_VERSION generation step must be locked by a mutex
+        # in order to prevent race conditions
+        if flock -n "${ICECC_VERSION}.lock" \
+            ${ICECC_ENV_EXEC} "${ICECC_CC}" "${ICECC_CXX}" "${ICECC_AS}" "${ICECC_VERSION}"
+        then
+            touch "${ICECC_VERSION}.done"
+        elif [ ! wait_for_file "${ICECC_VERSION}.done" 30 ]
+        then
+            # locking failed so wait for ${ICECC_VERSION}.done to appear
+            bbwarn "Timeout waiting for ${ICECC_VERSION}.done"
+            return
+        fi
     fi
 
     export ICECC_VERSION ICECC_CC ICECC_CXX
@@ -250,6 +308,6 @@ do_compile_kernelmodules_prepend() {
     set_icecc_env
 }
 
-#do_install_prepend() {
-#    set_icecc_env
-#}
+do_install_prepend() {
+    set_icecc_env
+}

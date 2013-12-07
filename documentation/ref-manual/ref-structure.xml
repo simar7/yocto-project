@@ -39,23 +39,27 @@
 
         <para>
             This directory includes a copy of BitBake for ease of use.
-            The copy usually matches the current stable BitBake release from the BitBake project.
+            The copy usually matches the current stable BitBake release from
+            the BitBake project.
             BitBake, a
             <ulink url='&YOCTO_DOCS_DEV_URL;#metadata'>Metadata</ulink>
-            interpreter, reads the Yocto Project metadata and runs the tasks
+            interpreter, reads the Yocto Project Metadata and runs the tasks
             defined by that data.
-            Failures are usually from the metadata and not from BitBake itself.
+            Failures are usually from the Metadata and not from BitBake itself.
             Consequently, most users do not need to worry about BitBake.
         </para>
 
         <para>
-            When you run the <filename>bitbake</filename> command, the wrapper script in
-            <filename>scripts/</filename> is executed to run the main BitBake executable,
-            which resides in the <filename>bitbake/bin/</filename> directory.
-            Sourcing the <link linkend="structure-core-script"><filename>&OE_INIT_FILE;</filename></link>
-            script places the <filename>scripts</filename> and <filename>bitbake/bin</filename>
-            directories (in that order) into the shell's <filename>PATH</filename> environment
-            variable.
+            When you run the <filename>bitbake</filename> command, the
+            main BitBake executable, which resides in the
+            <filename>bitbake/bin/</filename> directory, starts.
+            Sourcing an environment setup script (e.g.
+            <link linkend="structure-core-script"><filename>&OE_INIT_FILE;</filename></link>
+            or
+            <link linkend="structure-memres-core-script"><filename>oe-init-build-env-memres</filename></link>)
+            places the <filename>scripts</filename> and
+            <filename>bitbake/bin</filename> directories (in that order) into
+            the shell's <filename>PATH</filename> environment variable.
         </para>
 
         <para>
@@ -74,7 +78,7 @@
             the source tree is combined with the output.
             The <ulink url='&YOCTO_DOCS_DEV_URL;#build-directory'>Build Directory</ulink>
             is created initially when you <filename>source</filename>
-            the OpenEmbedded build environment setup script 
+            the OpenEmbedded build environment setup script
             (i.e.
             <link linkend='structure-core-script'><filename>&OE_INIT_FILE;</filename></link>
             or
@@ -97,7 +101,7 @@
     </section>
 
     <section id='handbook'>
-        <title><filename>documentation</filename></title>
+        <title><filename>documentation/</filename></title>
 
         <para>
             This directory holds the source for the Yocto Project documentation
@@ -105,7 +109,7 @@
             versions of the manuals.
             Each manual is contained in a sub-folder.
             For example, the files for this manual reside in
-            <filename>ref-manual</filename>.
+            the <filename>ref-manual/</filename> directory.
         </para>
     </section>
 
@@ -175,9 +179,9 @@
         </para>
 
         <para>
-            The <filename>scripts</filename> directory has useful scripts that assist contributing
-            back to the Yocto Project, such as <filename>create_pull_request</filename> and
-            <filename>send_pull_request</filename>.
+            The <filename>scripts</filename> directory has useful scripts that assist in contributing
+            back to the Yocto Project, such as <filename>create-pull-request</filename> and
+            <filename>send-pull-request</filename>.
         </para>
     </section>
 
@@ -185,9 +189,9 @@
         <title><filename>&OE_INIT_FILE;</filename></title>
 
         <para>
-            This script is one of two scripts that set up the OpenEmbedded build 
+            This script is one of two scripts that set up the OpenEmbedded build
             environment.
-            For information on the other script, see the 
+            For information on the other script, see the
             "<link linkend='structure-memres-core-script'><filename>oe-init-build-env-memres</filename></link>"
             section.
         </para>
@@ -196,7 +200,7 @@
             Running this script with the <filename>source</filename> command in
             a shell makes changes to <filename>PATH</filename> and sets other
             core BitBake variables based on the current working directory.
-            You need to run an environment setup script before running BitBake 
+            You need to run an environment setup script before running BitBake
             commands.
             The script uses other scripts within the
             <filename>scripts</filename> directory to do the bulk of the work.
@@ -205,7 +209,8 @@
         <para>
             By default, running this script without a
             <ulink url='&YOCTO_DOCS_DEV_URL;#build-directory'>Build Directory</ulink>
-            argument creates the <filename>build</filename> directory.
+            argument creates the <filename>build</filename> directory
+            in your current working directory.
             If you provide a Build Directory argument when you
             <filename>source</filename> the script, you direct the OpenEmbedded
             build system to create a Build Directory of your choice.
@@ -231,11 +236,11 @@
         <title><filename>oe-init-build-env-memres</filename></title>
 
         <para>
-            This script is one of two scripts that set up the OpenEmbedded build 
-            environment.
-            Setting up the environment with this script uses a 
-            memory-resident BitBake.
-            For information on the other setup script, see the 
+            This script is one of two scripts that set up the OpenEmbedded
+            build environment.
+            Aside from setting up the environment, this script starts a
+            memory-resident BitBake server.
+            For information on the other setup script, see the
             "<link linkend='structure-core-script'><filename>&OE_INIT_FILE;</filename></link>"
             section.
         </para>
@@ -252,14 +257,14 @@
             Running this script with the <filename>source</filename> command in
             a shell makes changes to <filename>PATH</filename> and sets other
             core BitBake variables based on the current working directory.
-            One of these variables is the 
+            One of these variables is the
             <link linkend='var-BBSERVER'><filename>BBSERVER</filename></link>
-            variable, which allows the OpenEmbedded build system to locate 
+            variable, which allows the OpenEmbedded build system to locate
             the server that is running BitBake.
         </para>
 
         <para>
-            You need to run an environment setup script before running BitBake 
+            You need to run an environment setup script before using BitBake
             commands.
             Following is the script syntax:
             <literallayout class='monospaced'>
@@ -270,33 +275,34 @@
         </para>
 
         <para>
-            If you do not provide a port number with the script, the default
-            port "12345" is used.
+            If you do not provide a port number with the script, the
+            BitBake server at port "12345" is started.
         </para>
 
         <para>
             By default, running this script without a
             <ulink url='&YOCTO_DOCS_DEV_URL;#build-directory'>Build Directory</ulink>
-            argument creates the <filename>build</filename> directory.
+            argument creates a build directory named
+            <filename>build</filename>.
             If you provide a Build Directory argument when you
-            <filename>source</filename> the script, you direct the OpenEmbedded
-            build system to create a Build Directory of your choice.
-            For example, the following command uses the default port number
-            "12345" and creates a Build Directory named
+            <filename>source</filename> the script, the Build Directory is
+            created using that name.
+            For example, the following command starts the BitBake server using
+            the default port "12345" and creates a Build Directory named
             <filename>mybuilds</filename> that is outside of the
             <ulink url='&YOCTO_DOCS_DEV_URL;#source-directory'>Source Directory</ulink>:
             <literallayout class='monospaced'>
      $ source oe-init-build-env-memres ~/mybuilds
             </literallayout>
             <note>
-                The OpenEmbedded build system does not support file or 
+                The OpenEmbedded build system does not support file or
                 directory names that contain spaces.
-                If you attempt to run the 
+                If you attempt to run the
                 <filename>oe-init-build-env-memres</filename> script
-                from a Source Directory that contains spaces in either the 
-                filenames or directory names, the script returns an error 
+                from a Source Directory that contains spaces in either the
+                filenames or directory names, the script returns an error
                 indicating no such file or directory.
-                Be sure to use a Source Directory free of names containing 
+                Be sure to use a Source Directory free of names containing
                 spaces.
             </note>
         </para>
@@ -321,81 +327,72 @@
         By default, this directory is named <filename>build</filename>.
     </para>
 
-    <section id='structure-build-pseudodone'>
-        <title><filename>build/pseudodone</filename></title>
-
-        <para>
-            This tag file indicates that the initial pseudo binary was created.
-            The file is built the first time BitBake is invoked.
-        </para>
-    </section>
-
     <section id='structure-build-conf-local.conf'>
         <title><filename>build/conf/local.conf</filename></title>
 
         <para>
-            This configuration file contains all the local user configurations 
+            This configuration file contains all the local user configurations
             for your build environment.
-            The <filename>local.conf</filename> file contains documentation on 
+            The <filename>local.conf</filename> file contains documentation on
             the various configuration options.
-            Any variable set here overrides any variable set elsewhere within 
-            the environment unless that variable is hard-coded within a file 
+            Any variable set here overrides any variable set elsewhere within
+            the environment unless that variable is hard-coded within a file
             (e.g. by using '=' instead of '?=').
-            Some variables are hard-coded for various reasons but these 
+            Some variables are hard-coded for various reasons but these
             variables are relatively rare.
         </para>
 
         <para>
-            Edit this file to set the 
+            Edit this file to set the
             <filename><link linkend='var-MACHINE'>MACHINE</link></filename>
             for which you want to build, which package types you wish to use
             (<link linkend='var-PACKAGE_CLASSES'><filename>PACKAGE_CLASSES</filename></link>),
-            the location from which you want to downloaded files
+            the location from which you want to access downloaded files
             (<filename><link linkend='var-DL_DIR'>DL_DIR</link></filename>),
             and how you want your host machine to use resources
-            (<link linkend='var-BB_NUMBER_THREADS'><filename>BB_NUMBER_THREADS</filename></link> 
+            (<link linkend='var-BB_NUMBER_THREADS'><filename>BB_NUMBER_THREADS</filename></link>
             and
             <link linkend='var-PARALLEL_MAKE'><filename>PARALLEL_MAKE</filename></link>).
         </para>
 
         <para>
-            If <filename>local.conf</filename> is not present when you 
-            start the build, the OpenEmbedded build system creates it from 
+            If <filename>local.conf</filename> is not present when you
+            start the build, the OpenEmbedded build system creates it from
             <filename>local.conf.sample</filename> when
-            you <filename>source</filename> the top-level build environment 
+            you <filename>source</filename> the top-level build environment
             setup script (i.e.
             <link linkend='structure-core-script'><filename>&OE_INIT_FILE;</filename></link>
-            or 
+            or
             <link linkend='structure-memres-core-script'><filename>oe-init-build-env-memres</filename></link>).
         </para>
 
         <para>
-            The source <filename>local.conf.sample</filename> file used 
+            The source <filename>local.conf.sample</filename> file used
             depends on the <filename>$TEMPLATECONF</filename> script variable,
-            which defaults to <filename>/meta-yocto/conf</filename>
-            when you are building from the Yocto Project development 
-            environment and defaults to <filename>/meta/conf</filename> when 
+            which defaults to <filename>meta-yocto/conf</filename>
+            when you are building from the Yocto Project development
+            environment and defaults to <filename>meta/conf</filename> when
             you are building from the OpenEmbedded Core environment.
-            Because the script variable points to the source of the 
-            <filename>local.conf.sample</filename> file, this implies that 
-            you can configure your build environment from any layer by setting     
-            the variable in the top-level build environment setup script as 
+            Because the script variable points to the source of the
+            <filename>local.conf.sample</filename> file, this implies that
+            you can configure your build environment from any layer by setting
+            the variable in the top-level build environment setup script as
             follows:
             <literallayout class='monospaced'>
      TEMPLATECONF=&lt;your_layer&gt;/conf
             </literallayout>
-            Once the build process gets the sample file, it uses 
-            <filename>sed</filename> to substitute final 
-            <filename>${</filename><link linkend='var-OEROOT'><filename>OEROOT</filename></link><filename>}</filename> 
+            Once the build process gets the sample file, it uses
+            <filename>sed</filename> to substitute final
+            <filename>${</filename><link linkend='var-OEROOT'><filename>OEROOT</filename></link><filename>}</filename>
             values for all <filename>##OEROOT##</filename> values.
             <note>
                 You can see how the <filename>TEMPLATECONF</filename> variable
-                is used by looking at the       
-                <filename>/scripts/oe-setup-builddir</filename> script in the 
+                is used by looking at the
+                <filename>scripts/oe-setup-builddir</filename> script in the
                 <ulink url='&YOCTO_DOCS_DEV_URL;#source-directory'>Source Directory</ulink>.
-                You can find the Yocto Project version of the 
-                <filename>local.conf.sample</filename> file in the 
-                <filename>/meta-yocto/conf</filename> directory.                
+                You can find the Yocto Project version of the
+                <filename>local.conf.sample</filename> file in the
+                <filename>meta-yocto/conf</filename> directory.
             </note>
         </para>
     </section>
@@ -408,48 +405,48 @@
             <ulink url='&YOCTO_DOCS_DEV_URL;#understanding-and-creating-layers'>layers</ulink>,
             which are directory trees, traversed (or walked) by BitBake.
             The <filename>bblayers.conf</filename> file uses the
-            <link linkend='var-BBLAYERS'><filename>BBLAYERS</filename></link> 
+            <link linkend='var-BBLAYERS'><filename>BBLAYERS</filename></link>
             variable to list the layers BitBake tries to find, and uses the
             <link linkend='var-BBLAYERS_NON_REMOVABLE'><filename>BBLAYERS_NON_REMOVABLE</filename></link>
             variable to list layers that must not be removed.
         </para>
 
         <para>
-            If <filename>bblayers.conf</filename> is not present when you 
-            start the build, the OpenEmbedded build system creates it from 
+            If <filename>bblayers.conf</filename> is not present when you
+            start the build, the OpenEmbedded build system creates it from
             <filename>bblayers.conf.sample</filename> when
-            you <filename>source</filename> the top-level build environment 
+            you <filename>source</filename> the top-level build environment
             setup script (i.e.
             <link linkend='structure-core-script'><filename>&OE_INIT_FILE;</filename></link>
-            or 
+            or
             <link linkend='structure-memres-core-script'><filename>oe-init-build-env-memres</filename></link>).
         </para>
 
         <para>
-            The source <filename>bblayers.conf.sample</filename> file used 
+            The source <filename>bblayers.conf.sample</filename> file used
             depends on the <filename>$TEMPLATECONF</filename> script variable,
-            which defaults to <filename>/meta-yocto/conf</filename>
-            when you are building from the Yocto Project development 
-            environment and defaults to <filename>/meta/conf</filename> when 
+            which defaults to <filename>meta-yocto/conf</filename>
+            when you are building from the Yocto Project development
+            environment and defaults to <filename>meta/conf</filename> when
             you are building from the OpenEmbedded Core environment.
-            Because the script variable points to the source of the 
-            <filename>bblayers.conf.sample</filename> file, this implies that 
+            Because the script variable points to the source of the
+            <filename>bblayers.conf.sample</filename> file, this implies that
             you can base your build from any layer by setting the variable in
             the top-level build environment setup script as follows:
             <literallayout class='monospaced'>
      TEMPLATECONF=&lt;your_layer&gt;/conf
             </literallayout>
-            Once the build process gets the sample file, it uses 
-            <filename>sed</filename> to substitute final 
-            <filename>${</filename><link linkend='var-OEROOT'><filename>OEROOT</filename></link><filename>}</filename> 
+            Once the build process gets the sample file, it uses
+            <filename>sed</filename> to substitute final
+            <filename>${</filename><link linkend='var-OEROOT'><filename>OEROOT</filename></link><filename>}</filename>
             values for all <filename>##OEROOT##</filename> values.
             <note>
                 You can see how the <filename>TEMPLATECONF</filename> variable
-                <filename>/scripts/oe-setup-builddir</filename> script in the 
+                <filename>scripts/oe-setup-builddir</filename> script in the
                 <ulink url='&YOCTO_DOCS_DEV_URL;#source-directory'>Source Directory</ulink>.
-                You can find the Yocto Project version of the 
-                <filename>bblayers.conf.sample</filename> file in the 
-                <filename>/meta-yocto/conf</filename> directory.                
+                You can find the Yocto Project version of the
+                <filename>bblayers.conf.sample</filename> file in the
+                <filename>meta-yocto/conf</filename> directory.
             </note>
         </para>
     </section>
@@ -491,7 +488,7 @@
         <title><filename>build/tmp/</filename></title>
 
         <para>
-            This directory receives all the OpenEmbedded build system's output.
+            This directory receives all of the OpenEmbedded build system's output.
             BitBake creates this directory if it does not exist.
             As a last resort, to clean up a build and start it from scratch (other than the downloads),
             you can remove everything in the <filename>tmp</filename> directory or get rid of the
@@ -555,6 +552,15 @@
         </para>
     </section>
 
+    <section id='structure-build-tmp-deploy-ipk'>
+        <title><filename>build/tmp/deploy/ipk/</filename></title>
+
+        <para>
+            This directory receives <filename>.ipk</filename> packages produced by
+            the build process.
+        </para>
+    </section>
+
     <section id='structure-build-tmp-deploy-licenses'>
         <title><filename>build/tmp/deploy/licenses/</filename></title>
 
@@ -601,14 +607,6 @@
         </para>
     </section>
 
-    <section id='structure-build-tmp-deploy-ipk'>
-        <title><filename>build/tmp/deploy/ipk/</filename></title>
-
-        <para>
-            This directory receives <filename>.ipk</filename> packages produced by
-            the build process.</para>
-    </section>
-
     <section id='structure-build-tmp-sysroots'>
         <title><filename>build/tmp/sysroots/</filename></title>
 
@@ -647,15 +645,6 @@
             Examples of logs are the output from the <filename>check_pkg</filename> or
             <filename>distro_check</filename> tasks.
             Running a build does not necessarily mean this directory is created.
-        </para>
-    </section>
-
-    <section id='structure-build-tmp-pkgdata'>
-        <title><filename>build/tmp/pkgdata/</filename></title>
-
-        <para>
-            This directory contains intermediate packaging data that is used later in the packaging process.
-            For more information, see the "<link linkend='ref-classes-package'>Packaging - package*.bbclass</link>" section.
         </para>
     </section>
 
@@ -790,7 +779,7 @@
             This directory contains common license files and several text files
             used by the build system.
             The text files contain minimal device information and
-            lists of files and directories with knows permissions.
+            lists of files and directories with known permissions.
         </para>
     </section>
 

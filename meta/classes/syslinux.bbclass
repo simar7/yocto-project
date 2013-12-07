@@ -27,7 +27,7 @@ SYSLINUXDIR = "/"
 # a console=...some_tty...
 SYSLINUX_DEFAULT_CONSOLE ?= ""
 SYSLINUX_SERIAL ?= "0 115200"
-SYSLINUX_SERIAL_TTY ?= "ttyS0,115200"
+SYSLINUX_SERIAL_TTY ?= "console=ttyS0,115200"
 ISO_BOOTIMG = "isolinux/isolinux.bin"
 ISO_BOOTCAT = "isolinux/boot.cat"
 MKISOFS_OPTIONS = "-no-emul-boot -boot-load-size 4 -boot-info-table"
@@ -179,3 +179,4 @@ python build_syslinux_cfg () {
 
     cfgfile.close()
 }
+build_syslinux_cfg[vardeps] += "APPEND"

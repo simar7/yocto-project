@@ -21,13 +21,13 @@
        <link linkend='var-CFLAGS'>C</link>
        <link linkend='var-D'>D</link>
        <link linkend='var-ENABLE_BINARY_LOCALE_GENERATION'>E</link>
-       <link linkend='var-FILES'>F</link>
-<!--               <link linkend='var-glossary-g'>G</link> -->
+       <link linkend='var-FEED_DEPLOYDIR_BASE_URI'>F</link>
+       <link linkend='var-GROUPADD_PARAM'>G</link>
        <link linkend='var-HOMEPAGE'>H</link>
-       <link linkend='var-IMAGE_BASENAME'>I</link>
+       <link linkend='var-ICECC_CC'>I</link>
 <!--               <link linkend='var-glossary-j'>J</link> -->
        <link linkend='var-KARCH'>K</link>
-       <link linkend='var-LAYERDEPENDS'>L</link>
+       <link linkend='var-LABELS'>L</link>
        <link linkend='var-MACHINE'>M</link>
 <!--               <link linkend='var-glossary-n'>N</link> -->
        <link linkend='var-OE_BINCONFIG_EXTRA_MANGLE'>O</link>
@@ -36,7 +36,7 @@
        <link linkend='var-RCONFLICTS'>R</link>
        <link linkend='var-S'>S</link>
        <link linkend='var-T'>T</link>
-       <link linkend='var-UBOOT_ENTRYPOINT'>U</link>
+       <link linkend='var-UBOOT_CONFIG'>U</link>
 <!--               <link linkend='var-glossary-v'>V</link> -->
        <link linkend='var-WARN_QA'>W</link>
 <!--               <link linkend='var-glossary-x'>X</link> -->
@@ -53,15 +53,16 @@
                    By default, BitBake does not produce empty packages.
                    This default behavior can cause issues when there is an
                    <link linkend='var-RDEPENDS'><filename>RDEPENDS</filename></link> or
-                   some other runtime hard-requirement on the existence of the package.
+                   some other hard runtime requirement on the existence of the package.
                 </para>
 
                 <para>
                    Like all package-controlling variables, you must always use them in
-                   conjunction with a package name override.
-                   Here is an example:
+                   conjunction with a package name override, as in:
                    <literallayout class='monospaced'>
      ALLOW_EMPTY_${PN} = "1"
+     ALLOW_EMPTY_${PN}-dev = "1"
+     ALLOW_EMPTY_${PN}-staticdev = "1"
                    </literallayout>
                 </para>
             </glossdef>
@@ -202,6 +203,21 @@
             </glossdef>
          </glossentry>
 
+         <glossentry id='var-APPEND'><glossterm>APPEND</glossterm>
+            <glossdef>
+                <para>
+                    An override list of append strings for each
+                    <link linkend='var-LABELS'><filename>LABEL</filename></link>.
+                </para>
+
+                <para>
+                    See the
+                    <link linkend='ref-classes-grub-efi'><filename>grub-efi</filename></link>
+                    class for more information on how this variable is used.
+                </para>
+            </glossdef>
+         </glossentry>
+
          <glossentry id='var-AUTHOR'><glossterm>AUTHOR</glossterm>
             <glossdef>
                 <para>The email address used to contact the original author
@@ -234,9 +250,9 @@
                     in which the OpenEmbedded build system places generated
                     objects during a recipe's build process.
                     By default, this directory is the same as the <link linkend='var-S'><filename>S</filename></link>
-                    directory:
+                    directory, which is defined as:
                     <literallayout class='monospaced'>
-     B = "${WORKDIR}/${BPN}/{PV}/"
+     S = "${WORKDIR}/${BP}/"
                     </literallayout>
                     You can separate the (<filename>S</filename>) directory
                     and the directory pointed to by the <filename>B</filename>
@@ -319,10 +335,11 @@
 
                 <para>
                     You can change the default behavior by setting this
-                    variable to "1" in the <filename>local.conf</filename>
-                    file in the
-                    <ulink url='&YOCTO_DOCS_DEV_URL;#build-directory'>Build Directory</ulink>
-                    as follows:
+                    variable to "1", "yes", or "true"
+                    in your <filename>local.conf</filename> file, which is
+                    located in the
+                    <ulink url='&YOCTO_DOCS_DEV_URL;#build-directory'>Build Directory</ulink>:
+                    Here is an example:
                     <literallayout class='monospaced'>
      BB_DANGLINGAPPENDS_WARNONLY = "1"
                     </literallayout>
@@ -503,7 +520,7 @@
                     the Git repositories is not the default action by the
                     OpenEmbedded build system.
                     <literallayout class='monospaced'>
-     BB_Generate_MIRROR_TARBALLS = "1"
+     BB_GENERATE_MIRROR_TARBALLS = "1"
                     </literallayout>
                     Set this variable in your <filename>local.conf</filename>
                     file in the
@@ -515,7 +532,7 @@
         <glossentry id='var-BB_NUMBER_THREADS'><glossterm>BB_NUMBER_THREADS</glossterm>
             <glossdef>
                 <para>The maximum number of tasks BitBake should run in parallel at any one time.
-                    If your host development system supports multiple cores a good rule of thumb
+                    If your host development system supports multiple cores, a good rule of thumb
                     is to set this variable to twice the number of cores.</para>
             </glossdef>
         </glossentry>
@@ -591,7 +608,7 @@
                     for a layer with no dependencies, is the lowest defined priority + 1
                     (or 1 if no priorities are defined).</para>
                 <tip>
-                    You can use the command <filename>bitbake-layers show_layers</filename> to list
+                    You can use the command <filename>bitbake-layers show-layers</filename> to list
                     all configured layers along with their priorities.
                 </tip>
             </glossdef>
@@ -636,10 +653,15 @@
 
         <glossentry id='var-BBLAYERS_NON_REMOVABLE'><glossterm>BBLAYERS_NON_REMOVABLE</glossterm>
             <glossdef>
-Core layer for images cannot be removed
                 <para>Lists core layers that cannot be removed from the
-                    <filename>bblayers.conf</filename> file.
-                    In order for BitBake to build your image, your
+                    <filename>bblayers.conf</filename> file during a build
+                    using the
+                    <ulink url='https://www.yoctoproject.org/tools-resources/projects/hob'>Hob</ulink>.
+                    <note>
+                        When building an image outside of Hob, this variable
+                        is ignored.
+                    </note>
+                    In order for BitBake to build your image using Hob, your
                     <filename>bblayers.conf</filename> file must include the
                     <filename>meta</filename> and <filename>meta-yocto</filename>
                     core layers.
@@ -695,10 +717,10 @@ Core layer for images cannot be removed
                 <para>
                     The following example uses a complete regular expression
                     to tell BitBake to ignore all recipe and recipe append
-                    files in the <filename>/meta-ti/recipes-misc/</filename>
+                    files in the <filename>meta-ti/recipes-misc/</filename>
                     directory:
                     <literallayout class='monospaced'>
-     BBMASK = "/meta-ti/recipes-misc/"
+     BBMASK = "meta-ti/recipes-misc/"
                     </literallayout>
                     If you want to mask out multiple directories or recipes,
                     use the vertical bar to separate the regular expression
@@ -819,6 +841,18 @@ Core layer for images cannot be removed
             </glossdef>
         </glossentry>
 
+        <glossentry id='var-BUGTRACKER'><glossterm>BUGTRACKER</glossterm>
+            <glossdef>
+                <para>
+                    Specifies a URL for an upstream bug tracking website for
+                    a recipe.
+                    The OpenEmbedded build system does not use this variable.
+                    Rather, the variable is a useful pointer in case a bug
+                    in the software being built needs to be manually reported.
+                </para>
+            </glossdef>
+        </glossentry>
+
         <glossentry id='var-BUILDDIR'><glossterm>BUILDDIR</glossterm>
             <glossdef>
                 <para>
@@ -833,6 +867,20 @@ Core layer for images cannot be removed
                     If you run the scripts and do not provide a Build Directory
                     path, the <filename>BUILDDIR</filename> defaults to
                     <filename>build</filename> in the current directory.
+                </para>
+            </glossdef>
+        </glossentry>
+
+        <glossentry id='var-BUILDSTATS_BASE'><glossterm>BUILDSTATS_BASE</glossterm>
+            <glossdef>
+                <para>
+                    Points to the location of the directory that holds build
+                    statistics when you use and enable the
+                    <link linkend='ref-classes-buildstats'><filename>buildstats</filename></link>
+                    class.
+                    The <filename>BUILDSTATS_BASE</filename> directory defaults
+                    to
+                    <filename>${</filename><link linkend='var-TMPDIR'><filename>TMPDIR</filename></link><filename>}/buildstats/</filename>.
                 </para>
             </glossdef>
         </glossentry>
@@ -870,12 +918,55 @@ Core layer for images cannot be removed
             </glossdef>
         </glossentry>
 
+        <glossentry id='var-CLASSOVERRIDE'><glossterm>CLASSOVERRIDE</glossterm>
+            <glossdef>
+                <para>
+                    An internal variable specifying the special class override
+                    that should currently apply (e.g. "class-target",
+                    "class-native", and so forth).
+                    The classes that use this variable set it to
+                    appropriate values.
+                </para>
+
+                <para>
+                    You do not normally directly interact with this variable.
+                    The value for the <filename>CLASSOVERRIDE</filename>
+                    variable goes into
+                    <link linkend='var-OVERRIDES'><filename>OVERRIDES</filename></link>
+                    and then can be used as an override.
+                    Here is an example where "python-native" is added to
+                    <link linkend='var-DEPENDS'><filename>DEPENDS</filename></link>
+                    only when building for the native case:
+                    <literallayout class='monospaced'>
+     DEPENDS_append_class-native = " python-native"
+                    </literallayout>
+                </para>
+            </glossdef>
+        </glossentry>
+
         <glossentry id='var-COMBINED_FEATURES'><glossterm>COMBINED_FEATURES</glossterm>
             <glossdef>
-                <para>A set of features common between
+                <para>
+                    Provides a list of hardware features that are enabled in
+                    both
                     <link linkend='var-MACHINE_FEATURES'><filename>MACHINE_FEATURES</filename></link>
-                    and <link linkend='var-DISTRO_FEATURES'><filename>DISTRO_FEATURES</filename></link>.
-                    See the glossary descriptions for these variables for more information.</para>
+                    and
+                    <link linkend='var-DISTRO_FEATURES'><filename>DISTRO_FEATURES</filename></link>.
+                    This select list of features contains features that make
+                    sense to be controlled both at the machine and distribution
+                    configuration level.
+                    For example, the "bluetooth" feature requires hardware
+                    support but should also be optional at the distribution
+                    level, in case the hardware supports Bluetooth but you
+                    do not ever intend to use it.
+                </para>
+
+                <para>
+                    For more information, see the
+                    <link linkend='var-MACHINE_FEATURES'><filename>MACHINE_FEATURES</filename></link>
+                    and <link linkend='var-DISTRO_FEATURES'><filename>DISTRO_FEATURES</filename></link>
+                    variables.
+                </para>
             </glossdef>
         </glossentry>
 
@@ -969,8 +1060,8 @@ Core layer for images cannot be removed
                     Then, provide a space-separated list of files.
                     Here is an example:
                     <literallayout class='monospaced'>
-  CONFFILES_${PN} += "${sysconfdir}/file1 \
-     ${sysconfdir}/file2 ${sysconfdir}/file3"
+     CONFFILES_${PN} += "${sysconfdir}/file1 \
+        ${sysconfdir}/file2 ${sysconfdir}/file3"
                     </literallayout>
                 </para>
 
@@ -993,7 +1084,7 @@ Core layer for images cannot be removed
                     <filename>/etc</filename> or <filename>${bindir}</filename> rather
                     than <filename>/usr/bin</filename>.
                     You can find a list of these variables at the top of the
-                    <filename>/meta/conf/bitbake.conf</filename> file in the
+                    <filename>meta/conf/bitbake.conf</filename> file in the
                     <ulink url='&YOCTO_DOCS_DEV_URL;#source-directory'>Source Directory</ulink>.
                 </note>
             </glossdef>
@@ -1006,6 +1097,24 @@ Core layer for images cannot be removed
                     to the current build.
                     This variable is used by the Autotools utilities when running
                     <filename>configure</filename>.
+                </para>
+            </glossdef>
+        </glossentry>
+
+        <glossentry id='var-CONFLICT_DISTRO_FEATURES'><glossterm>CONFLICT_DISTRO_FEATURES</glossterm>
+            <glossdef>
+                <para>
+                    When a recipe inherits the
+                    <filename>distro_features_check</filename> class, this
+                    variable identifies distribution features that would
+                    be in conflict should the recipe
+                    be built.
+                    In other words, if the
+                    <filename>CONFLICT_DISTRO_FEATURES</filename> variable
+                    lists a feature that also appears in
+                    <filename>DISTRO_FEATURES</filename> within the
+                    current configuration, an error occurs and the
+                    build stops.
                 </para>
             </glossdef>
         </glossentry>
@@ -1030,7 +1139,7 @@ Core layer for images cannot be removed
             <glossdef>
                 <para>
                     Specifies the parent directory of the OpenEmbedded
-                    Core Metadata layer (i.e. <filename>/meta</filename>).
+                    Core Metadata layer (i.e. <filename>meta</filename>).
                 </para>
 
                 <para>
@@ -1085,7 +1194,7 @@ Core layer for images cannot be removed
                     <filename><link linkend='var-TARGET_CFLAGS'>TARGET_CFLAGS</link></filename>
                     and <filename><link linkend='var-CFLAGS'>CFLAGS</link></filename> when compiling
                     a system for debugging.
-                    This variable defaults to "-O -fno-omit-frame-pointer -g".
+                    This variable defaults to "-O -fno-omit-frame-pointer ${DEBUG_FLAGS} -pipe".
                 </para>
             </glossdef>
         </glossentry>
@@ -1108,7 +1217,7 @@ Core layer for images cannot be removed
                     The bias provided by <filename>DEFAULT_PREFERENCE</filename>
                     is weak and is overridden by
                     <filename><link linkend='var-BBFILE_PRIORITY'>BBFILE_PRIORITY</link></filename>
-                    if the that variable is different between two layers
+                    if that variable is different between two layers
                     that contain different versions of the same recipe.
                 </note>
             </glossdef>
@@ -1156,7 +1265,7 @@ Core layer for images cannot be removed
                     files that are ready to be used outside of the build system.
                     By default, this directory resides within the
                     <ulink url='&YOCTO_DOCS_DEV_URL;#build-directory'>Build Directory</ulink>
-                    as <filename>tmp/deploy</filename>.
+                    as <filename>${TMPDIR}/deploy</filename>.
                 </para>
 
                 <para>
@@ -1183,7 +1292,7 @@ Core layer for images cannot be removed
                     <filename>${MACHINE}</filename> name.
                     By default, this directory resides within the
                     <ulink url='&YOCTO_DOCS_DEV_URL;#build-directory'>Build Directory</ulink>
-                    as <filename>tmp/deploy/images/${MACHINE}/</filename>.
+                    as <filename>${DEPLOY_DIR}/images/${MACHINE}/</filename>.
                 </para>
 
                 <para>
@@ -1215,18 +1324,40 @@ Core layer for images cannot be removed
             <glossdef>
                 <para>
                     The short name of the distribution.
-                    This variable corresponds to a file with the
-                    extension <filename>.conf</filename>
-                    located in a <filename>conf/distro</filename> directory
-                    within the
+                    This variable corresponds to a distribution
+                    configuration file whose root name is the same as the
+                    variable's argument and whose filename extension is
+                    <filename>.conf</filename>.
+                    For example, the distribution configuration file for the
+                    Poky distribution is named <filename>poky.conf</filename>
+                    and resides in the
+                    <filename>meta-yocto/conf/distro</filename> directory of
+                    the
+                    <ulink url='&YOCTO_DOCS_DEV_URL;#source-directory'>Source Directory</ulink>.
+                </para>
+
+                <para>
+                    Within that <filename>poky.conf</filename> file, the
+                    <filename>DISTRO</filename> variable is set as follows:
+                    <literallayout class='monospaced'>
+     DISTRO = "poky"
+                    </literallayout>
+                </para>
+
+                <para>
+                    Distribution configuration files are located in a
+                    <filename>conf/distro</filename> directory within the
                     <ulink url='&YOCTO_DOCS_DEV_URL;#metadata'>Metadata</ulink>
                     that contains the distribution configuration.
-                    The value must not contain spaces, and is typically all lower-case.
-                </para>
-                <para>
-                    If the variable is blank, a set of default configuration
-                    will be used, which is specified
-                    within <filename>meta/conf/distro/defaultsetup.conf</filename>.
+                    The value for <filename>DISTRO</filename> must not contain
+                    spaces, and is typically all lower-case.
+                    <note>
+                        If the <filename>DISTRO</filename> variable is blank, a set
+                        of default configurations are used, which are specified
+                        within
+                        <filename>meta/conf/distro/defaultsetup.conf</filename>
+                        also in the Source Directory.
+                    </note>
                 </para>
             </glossdef>
         </glossentry>
@@ -1261,10 +1392,31 @@ Core layer for images cannot be removed
 
         <glossentry id='var-DISTRO_FEATURES'><glossterm>DISTRO_FEATURES</glossterm>
             <glossdef>
-                <para>The features enabled for the distribution.
-                    For a list of supported features that ship with the
-                    Yocto Project, see the
-                    "<link linkend='ref-features-distro'>Distro</link>"
+                <para>
+                    The software support you want in your distribution for
+                    various features.
+                    You define your distribution features in the distribution
+                    configuration file.
+                </para>
+
+                <para>
+                    In most cases, the presence or absence of a feature in
+                    <filename>DISTRO_FEATURES</filename> is translated to the
+                    appropriate option supplied to the configure script
+                    during <filename>do_configure</filename> for recipes that
+                    optionally support the feature.
+                    For example, specifying "x11" in
+                    <filename>DISTRO_FEATURES</filename>, causes
+                    every piece of software built for the target that can
+                    optionally support X11 to have its X11 support enabled.
+                </para>
+
+                <para>
+                    Two more examples are Bluetooth and NFS support.
+                    For a more complete list of features that ships with the
+                    Yocto Project and that you can provide with this variable,
+                    see the
+                    "<link linkend='ref-features-distro'>Distro Features</link>"
                     section.
                 </para>
             </glossdef>
@@ -1320,7 +1472,7 @@ Core layer for images cannot be removed
 
         <glossentry id='var-DISTRO_VERSION'><glossterm>DISTRO_VERSION</glossterm>
             <glossdef>
-                <para>the version of the distribution.</para>
+                <para>The version of the distribution.</para>
             </glossdef>
         </glossentry>
 
@@ -1356,7 +1508,7 @@ Core layer for images cannot be removed
                 <para>
                     You can set this directory by defining the
                     <filename>DL_DIR</filename> variable in the
-                    <filename>/conf/local.conf</filename> file.
+                    <filename>conf/local.conf</filename> file.
                     This directory is self-maintaining and you should not have
                     to touch it.
                     By default, the directory is <filename>downloads</filename>
@@ -1600,7 +1752,7 @@ Core layer for images cannot be removed
                 <para>
                     For a complete list of image features that ships with the
                     Yocto Project, see the
-                    "<link linkend="ref-features-image">Images</link>"
+                    "<link linkend="ref-features-image">Image Features</link>"
                     section.
                 </para>
 
@@ -1621,7 +1773,7 @@ Core layer for images cannot be removed
                 <para>Sometimes a recipe is required to build the final image but is not
                     needed in the root filesystem.
                     You can use the <filename>EXTRA_IMAGEDEPENDS</filename> variable to
-                    list these recipes and thus, specify the dependencies.
+                    list these recipes and thus specify the dependencies.
                     A typical example is a required bootloader in a machine configuration.
                 </para>
                 <note>
@@ -1651,9 +1803,70 @@ Core layer for images cannot be removed
             </glossdef>
         </glossentry>
 
+        <glossentry id='var-EXTRA_USERS_PARAMS'><glossterm>EXTRA_USERS_PARAMS</glossterm>
+            <glossdef>
+                <para>
+                    When a recipe inherits the
+                    <link linkend='ref-classes-extrausers'><filename>extrausers</filename></link>
+                    class, this variable provides image level user and group
+                    operations.
+                    This is a more global method of providing user and group
+                    configuration as compared to using the
+                    <link linkend='ref-classes-useradd'><filename>useradd</filename></link>
+                    class, which ties user and group configurations to a
+                    specific recipe.
+                </para>
+
+                <para>
+                    The set list of commands you can configure using the
+                    <filename>EXTRA_USERS_PARAMS</filename> is shown in the
+                    <filename>extrausers</filename> class.
+                    These commands map to the normal Unix commands of the same
+                    names:
+                    <literallayout class='monospaced'>
+     # EXTRA_USERS_PARAMS = "\
+     # useradd -p '' tester; \
+     # groupadd developers; \
+     # userdel nobody; \
+     # groupdel -g video; \
+     # groupmod -g 1020 developers; \
+     # usermod -s /bin/sh tester; \
+     # "
+                    </literallayout>
+                </para>
+            </glossdef>
+        </glossentry>
+
     </glossdiv>
 
     <glossdiv id='var-glossary-f'><title>F</title>
+
+        <glossentry id='var-FEED_DEPLOYDIR_BASE_URI'><glossterm>FEED_DEPLOYDIR_BASE_URI</glossterm>
+            <glossdef>
+                <para>
+                    Points to the base URL of the server and location within
+                    the document-root that provides the metadata and
+                    packages required by OPKG to support runtime package
+                    management of IPK packages.
+                    You set this variable in your
+                    <filename>local.conf</filename> file.
+                </para>
+
+                <para>
+                    Consider the following example:
+                    <literallayout class='monospaced'>
+     FEED_DEPLOYDIR_BASE_URI = "http://192.168.7.1/BOARD-dir"
+                    </literallayout>
+                    This example assumes you are serving your packages over
+                    HTTP and your databases are located in a directory
+                    named <filename>BOARD-dir</filename>, which is underneath
+                    your HTTP server's document-root.
+                    In this case, the OpenEmbedded build system generates a set
+                    of configuration files for you in your target that work
+                    with the feed.
+                </para>
+            </glossdef>
+        </glossentry>
 
         <glossentry id='var-FILES'><glossterm>FILES</glossterm>
             <glossdef>
@@ -1668,18 +1881,18 @@ Core layer for images cannot be removed
                     files you want included as part of the resulting package.
                     Here is an example:
                     <literallayout class='monospaced'>
-  FILES_${PN} += "${bindir}/mydir1/ ${bindir}/mydir2/myfile"
+     FILES_${PN} += "${bindir}/mydir1/ ${bindir}/mydir2/myfile"
                     </literallayout>
                 </para>
 
                 <note>
                     When specifying paths as part of the <filename>FILES</filename> variable,
                     it is good practice to use appropriate path variables.
-                    For example, <filename>${sysconfdir}</filename> rather than
-                    <filename>/etc</filename> or <filename>${bindir}</filename> rather
+                    For example, use <filename>${sysconfdir}</filename> rather than
+                    <filename>/etc</filename>, or <filename>${bindir}</filename> rather
                     than <filename>/usr/bin</filename>.
                     You can find a list of these variables at the top of the
-                    <filename>/meta/conf/bitbake.conf</filename> file in the
+                    <filename>meta/conf/bitbake.conf</filename> file in the
                     <ulink url='&YOCTO_DOCS_DEV_URL;#source-directory'>Source Directory</ulink>.
                 </note>
 
@@ -1849,7 +2062,7 @@ Core layer for images cannot be removed
                     is located in the <filename>meta/files</filename> folder in the
                     <ulink url='&YOCTO_DOCS_DEV_URL;#source-directory'>Source Directory</ulink>.
                     If you create your own file permissions setting table, you should place it in your
-                    layer or the distros layer.
+                    layer or the distro's layer.
                 </para>
                 <para>
                     You define the <filename>FILESYSTEM_PERMS_TABLES</filename> variable in the
@@ -1867,6 +2080,21 @@ Core layer for images cannot be removed
             </glossdef>
         </glossentry>
 
+        <glossentry id='var-FONT_PACKAGES'><glossterm>FONT_PACKAGES</glossterm>
+            <glossdef>
+                <para>
+                    When a recipe inherits the
+                    <link linkend='ref-classes-fontcache'><filename>fontcache</filename></link>
+                    class, this variable identifies packages that contain fonts
+                    the OpenEmbedded build system installs.
+                    By default, installed fonts appear in the main package
+                    (i.e. <filename>${</filename><link linkend='var-PN'><filename>PN</filename></link><filename>}</filename>).
+                    Use this variable if fonts you need appear in a package
+                    other than that main package.
+                </para>
+            </glossdef>
+        </glossentry>
+
         <glossentry id='var-FULL_OPTIMIZATION'><glossterm>FULL_OPTIMIZATION</glossterm>
             <glossdef>
                 <para>
@@ -1875,15 +2103,128 @@ Core layer for images cannot be removed
                     and <filename><link linkend='var-CFLAGS'>CFLAGS</link></filename>
                     when compiling an optimized system.
                     This variable defaults to
-                    "-fexpensive-optimizations -fomit-frame-pointer -frename-registers -O2".
+                    "-O2 -pipe ${DEBUG_FLAGS}".
+                </para>
+            </glossdef>
+        </glossentry>
+    </glossdiv>
+
+    <glossdiv id='var-glossary-g'><title>G</title>
+
+        <glossentry id='var-GROUPADD_PARAM'><glossterm>GROUPADD_PARAM</glossterm>
+            <glossdef>
+                <para>
+                    When a recipe inherits the
+                    <filename>useradd</filename> class, this variable
+                    specifies for a package what parameters should be passed
+                    to the <filename>groupadd</filename> command
+                    if you wish to add a group to the system when the package
+                    is installed.
+                </para>
+
+                <para>
+                    Here is an example from the <filename>dbus</filename>
+                    recipe:
+                    <literallayout class='monospaced'>
+     GROUPADD_PARAM_${PN} = "-r netdev"
+                    </literallayout>
+                    For information on the standard Linux shell command
+                    <filename>groupadd</filename>, see
+                    <ulink url='http://linux.die.net/man/8/groupadd'></ulink>.
+                </para>
+            </glossdef>
+        </glossentry>
+
+        <glossentry id='var-GROUPMEMS_PARAM'><glossterm>GROUPMEMS_PARAM</glossterm>
+            <glossdef>
+                <para>
+                    When a recipe inherits the
+                    <filename>useradd</filename> class, this variable
+                    specifies for a package what parameters should be passed
+                    to the <filename>groupmems</filename> command
+                    if you wish to modify the members of a group when the
+                    package is installed.
+                </para>
+
+                <para>
+                    For information on the standard Linux shell command
+                    <filename>groupmems</filename>, see
+                    <ulink url='http://linux.die.net/man/8/groupmems'></ulink>.
+                </para>
+            </glossdef>
+        </glossentry>
+
+        <glossentry id='var-GRUB_GFXSERIAL'><glossterm>GRUB_GFXSERIAL</glossterm>
+            <glossdef>
+                <para>
+                    Configures the GNU GRand Unified Bootloader (GRUB) to have
+                    graphics and serial in the boot menu.
+                    Set this variable to "1" in your
+                    <filename>local.conf</filename> or distribution
+                    configuration file to enable graphics and serial
+                    in the menu.
+                </para>
+
+                <para>
+                    See the
+                    <link linkend='ref-classes-grub-efi'><filename>grub-efi</filename></link>
+                    class for more information on how this variable is used.
+                </para>
+            </glossdef>
+        </glossentry>
+
+        <glossentry id='var-GRUB_OPTS'><glossterm>GRUB_OPTS</glossterm>
+            <glossdef>
+                <para>
+                    Additional options to add to the GNU GRand Unified
+                    Bootloader (GRUB) configuration.
+                    Use a semi-colon character (<filename>;</filename>) to
+                    separate multiple options.
+                </para>
+
+                <para>
+                    The <filename>GRUB_OPTS</filename> variable is optional.
+                    See the
+                    <link linkend='ref-classes-grub-efi'><filename>grub-efi</filename></link>
+                    class for more information on how this variable is used.
+                </para>
+            </glossdef>
+        </glossentry>
+
+        <glossentry id='var-GRUB_TIMEOUT'><glossterm>GRUB_TIMEOUT</glossterm>
+            <glossdef>
+                <para>
+                    Specifies the timeout before executing the default
+                    <filename>LABEL</filename> in the GNU GRand Unified
+                    Bootloader (GRUB).
+                </para>
+
+                <para>
+                    The <filename>GRUB_TIMEOUT</filename> variable is optional.
+                    See the
+                    <link linkend='ref-classes-grub-efi'><filename>grub-efi</filename></link>
+                    class for more information on how this variable is used.
+                </para>
+            </glossdef>
+        </glossentry>
+
+        <glossentry id='var-GTKIMMODULES_PACKAGES'><glossterm>GTKIMMODULES_PACKAGES</glossterm>
+            <glossdef>
+                <para>
+                    Includes the packages that contain the GIMP Toolkit input
+                    method modules being installed when the modules are in
+                    packages other than the main package.
+                </para>
+
+                <para>
+                    See the
+                    <link linkend='ref-classes-gtk-immodules-cache'><filename>gtk-immodules-cache</filename></link>
+                    class for more information on how this variable is used.
                 </para>
             </glossdef>
         </glossentry>
 
     </glossdiv>
-
-<!--            <glossdiv id='var-glossary-g'><title>G</title>-->
-<!--            </glossdiv>-->
 
     <glossdiv id='var-glossary-h'><title>H</title>
 
@@ -1925,6 +2266,153 @@ Core layer for images cannot be removed
     </glossdiv>
 
     <glossdiv id='var-glossary-i'><title>I</title>
+
+        <glossentry id='var-ICECC_CC'><glossterm>ICECC_CC</glossterm>
+            <glossdef>
+                <para>
+                    The path to the GNU C compiler <filename>gcc</filename>.
+                    This variable is used by the
+                    <link linkend='ref-classes-icecc'><filename>icecc</filename></link>
+                    class.
+                    You do not set this variable by hand.
+                </para>
+
+                <para>
+                    When the location for the GNU C compiler is not a
+                    symbolic link, the class sets the variable to the location
+                    of the compiler.
+                </para>
+            </glossdef>
+        </glossentry>
+
+        <glossentry id='var-ICECC_CXX'><glossterm>ICECC_CXX</glossterm>
+            <glossdef>
+                <para>
+                    The path to the GNU C++ compiler <filename>g++</filename>.
+                    This variable is used by the
+                    <link linkend='ref-classes-icecc'><filename>icecc</filename></link>
+                    class.
+                    You do not set this variable by hand.
+                </para>
+
+                <para>
+                    When the location for the GNU C++ compiler is not a
+                    symbolic link, the class sets the variable to the location
+                    of the compiler.
+                </para>
+            </glossdef>
+        </glossentry>
+
+        <glossentry id='var-ICECC_ENV_EXEC'><glossterm>ICECC_ENV_EXEC</glossterm>
+            <glossdef>
+                <para>
+                    Points to the <filename>icecc-create-env</filename> script
+                    that you provide.
+                    This variable is used by the
+                    <link linkend='ref-classes-icecc'><filename>icecc</filename></link>
+                    class.
+                    You set this variable in your
+                    <filename>local.conf</filename> file.
+                </para>
+
+                <para>
+                    If you do not point to a script that you provide, the
+                    OpenEmbedded build system uses the default script provided
+                    by the <filename>icecc-create-env.bb</filename> recipe,
+                    which is a modified version and not the one that comes with
+                    <filename>icecc</filename>.
+                </para>
+            </glossdef>
+        </glossentry>
+
+        <glossentry id='var-ICECC_PATH'><glossterm>ICECC_PATH</glossterm>
+            <glossdef>
+                <para>
+                    The location of the <filename>icecc</filename> binary.
+                    You can set this variable in your
+                    <filename>local.conf</filename> file.
+                    If your <filename>local.conf</filename> file does not define
+                    this variable, the
+                    <link linkend='ref-classes-icecc'><filename>icecc</filename></link>
+                    class attempts to define it by locating
+                    <filename>icecc</filename> using <filename>which</filename>.
+                </para>
+            </glossdef>
+        </glossentry>
+
+        <glossentry id='var-ICECC_USER_CLASS_BL'><glossterm>ICECC_USER_CLASS_BL</glossterm>
+            <glossdef>
+                <para>
+                    Identifies user classes that you do not want the
+                    Icecream distributed compile support to consider.
+                    This variable is used by the
+                    <link linkend='ref-classes-icecc'><filename>icecc</filename></link>
+                    class.
+                    You set this variable in your
+                    <filename>local.conf</filename> file.
+                </para>
+
+                <para>
+                    When you list classes using this variable, you are
+                    "blacklisting" them from distributed compilation across
+                    remote hosts.
+                    Any classes you list will be distributed and compiled
+                    locally.
+                </para>
+            </glossdef>
+        </glossentry>
+
+        <glossentry id='var-ICECC_USER_PACKAGE_BL'><glossterm>ICECC_USER_PACKAGE_BL</glossterm>
+            <glossdef>
+                <para>
+                    Identifies user packages that you do not want the
+                    Icecream distributed compile support to consider.
+                    This variable is used by the
+                    <link linkend='ref-classes-icecc'><filename>icecc</filename></link>
+                    class.
+                    You set this variable in your
+                    <filename>local.conf</filename> file.
+                </para>
+
+                <para>
+                    When you list packages using this variable, you are
+                    "blacklisting" them from distributed compilation across
+                    remote hosts.
+                    Any packages you list will be distributed and compiled
+                    locally.
+                </para>
+            </glossdef>
+        </glossentry>
+
+        <glossentry id='var-ICECC_USER_PACKAGE_WL'><glossterm>ICECC_USER_PACKAGE_WL</glossterm>
+            <glossdef>
+                <para>
+                    Identifies user packages that use an empty
+                    <link linkend='var-PARALLEL_MAKE'><filename>PARALLEL_MAKE</filename></link>
+                    variable that you want to force remote distributed
+                    compilation on using the Icecream distributed compile
+                    support.
+                    This variable is used by the
+                    <link linkend='ref-classes-icecc'><filename>icecc</filename></link>
+                    class.
+                    You set this variable in your
+                    <filename>local.conf</filename> file.
+                </para>
+            </glossdef>
+        </glossentry>
+
+        <glossentry id='var-ICECC_VERSION'><glossterm>ICECC_VERSION</glossterm>
+            <glossdef>
+                <para>
+                    The version of the cross-compiler used in the
+                    cross-development toolchain.
+                    This variable is used by the
+                    <link linkend='ref-classes-icecc'><filename>icecc</filename></link>
+                    class.
+                    You do not set this variable by hand.
+                </para>
+            </glossdef>
+        </glossentry>
 
         <glossentry id='var-IMAGE_BASENAME'><glossterm>IMAGE_BASENAME</glossterm>
             <glossdef>
@@ -1977,12 +2465,12 @@ Core layer for images cannot be removed
                     </note>
                     For a list of image features that ships with the Yocto
                     Project, see the
-                    "<link linkend="ref-features-image">Images</link>"
+                    "<link linkend="ref-features-image">Image Features</link>"
                     section.
                 </para>
 
                 <para>
-                    For example that shows how to customize your image by
+                    For an example that shows how to customize your image by
                     using this variable, see the
                     "<ulink url='&YOCTO_DOCS_DEV_URL;#usingpoky-extend-customimage-imagefeatures'>Customizing Images Using Custom <filename>IMAGE_FEATURES</filename> and <filename>EXTRA_IMAGE_FEATURES</filename></ulink>"
                     section in the Yocto Project Development Manual.
@@ -1993,12 +2481,35 @@ Core layer for images cannot be removed
         <glossentry id='var-IMAGE_FSTYPES'><glossterm>IMAGE_FSTYPES</glossterm>
             <glossdef>
                 <para>
-                    Specifies the formats of the root filesystem created by
-                    the OpenEmbedded build system.
-                    Available formats are a subset of the
-                    supported images listed in
+                    Specifies the formats the OpenEmbedded build system uses
+                    during the build when creating the root filesystem.
+                    For example, setting <filename>IMAGE_FSTYPES</filename>
+                    as follows causes the build system to create root
+                    filesystems using two formats: <filename>.ext3</filename>
+                    and <filename>.tar.bz2</filename>:
+                    <literallayout class='monospaced'>
+     IMAGE_FSTYPES = "ext3 tar.bz2"
+                    </literallayout>
+                    For the complete list of supported image formats from which
+                    you can choose, see
                     <link linkend='var-IMAGE_TYPES'><filename>IMAGE_TYPES</filename></link>.
                 </para>
+
+                <note>
+                    If you add "live" to <filename>IMAGE_FSTYPES</filename>
+                    inside an image recipe, be sure that you do so prior to the
+                    "inherit image" line of the recipe or the live image will
+                    not build.
+                </note>
+
+                <note>
+                    Due to the way this variable is processed, it is not
+                    possible to update its contents using
+                    <filename>_append</filename> or
+                    <filename>_prepend</filename>. To add one or more
+                    additional options to this variable the
+                    <filename>+=</filename> operator must be used.
+                </note>
             </glossdef>
         </glossentry>
 
@@ -2028,8 +2539,8 @@ Core layer for images cannot be removed
                     to a default value using the <filename>?=</filename> operator, using a
                     <filename>+=</filename> operation against <filename>IMAGE_INSTALL</filename>
                     will result in unexpected behavior when used in
-                    <filename>/conf/local.conf</filename>.
-                    Furthermore, the same operation from with an image recipe may or may not
+                    <filename>conf/local.conf</filename>.
+                    Furthermore, the same operation from within an image recipe may or may not
                     succeed depending on the specific situation.
                     In both these cases, the behavior is contrary to how most users expect
                     the <filename>+=</filename> operator to work.
@@ -2041,7 +2552,7 @@ Core layer for images cannot be removed
      IMAGE_INSTALL_append = " package-name"
                     </literallayout>
                     Be sure to include the space between the quotation character and the start of the
-                    package name.
+                    package name or names.
                 </para>
             </glossdef>
         </glossentry>
@@ -2127,9 +2638,9 @@ Core layer for images cannot be removed
 
                 <para>
                     Alternatively, you can ensure a specific amount of free disk space is added
-                    to the image by using
+                    to the image by using the
                     <filename><link linkend='var-IMAGE_ROOTFS_EXTRA_SPACE'>IMAGE_ROOTFS_EXTRA_SPACE</link></filename>
-                    the variable.
+                    variable.
                 </para>
             </glossdef>
         </glossentry>
@@ -2180,6 +2691,14 @@ Core layer for images cannot be removed
                     variable as follows:
                     <literallayout class='monospaced'>
      IMAGE_ROOTFS_EXTRA_SPACE = "5242880"
+                    </literallayout>
+                </para>
+
+                <para>
+                    For example, the Yocto Project Build Appliance specifically requests 40 Gbytes
+                    of extra space with the line:
+                    <literallayout class='monospaced'>
+     IMAGE_ROOTFS_EXTRA_SPACE = "41943040"
                     </literallayout>
                 </para>
             </glossdef>
@@ -2383,6 +2902,25 @@ recipes-graphics/xorg-font/font-alias_1.0.3.bb:PR = "${INC_PR}.3"
             </glossdef>
         </glossentry>
 
+        <glossentry id='var-INHERIT_DISTRO'><glossterm>INHERIT_DISTRO</glossterm>
+            <glossdef>
+                <para>
+                    Lists classes that are inherited by default at the
+                    distribution level.
+                    It is unlikely that you want to edit this variable.
+                </para>
+
+                <para>
+                    The variable is set as follows in the
+                    <filename>meta/conf/distro/defaultsetup.conf</filename>
+                    file:
+                    <literallayout class='monospaced'>
+     INHERIT_DISTRO ?= "debian devshell sstate license"
+                    </literallayout>
+                </para>
+            </glossdef>
+        </glossentry>
+
         <glossentry id='var-INITRAMFS_FSTYPES'><glossterm>INITRAMFS_FSTYPES</glossterm>
             <glossdef>
                 <para>
@@ -2395,14 +2933,31 @@ recipes-graphics/xorg-font/font-alias_1.0.3.bb:PR = "${INC_PR}.3"
             </glossdef>
         </glossentry>
 
+        <glossentry id='var-INITRD'><glossterm>INITRD</glossterm>
+            <glossdef>
+                <para>
+                    Indicates a filesystem image to use as an initial RAM
+                    disk (<filename>initrd</filename>).
+                </para>
+
+                <para>
+                    The <filename>INITRD</filename> variable is an optional
+                    variable used with the
+                    <link linkend='ref-classes-bootimg'><filename>buildimg</filename></link>
+                    class.
+                </para>
+            </glossdef>
+        </glossentry>
+
         <glossentry id='var-INITSCRIPT_NAME'><glossterm>INITSCRIPT_NAME</glossterm>
             <glossdef>
                 <para>
-                    The filename of the initscript as installed to <filename>${etcdir}/init.d</filename>.
+                    The filename of the initialization script as installed to
+                    <filename>${sysconfdir}/init.d</filename>.
                 </para>
                 <para>
                     This variable is used in recipes when using <filename>update-rc.d.bbclass</filename>.
-                    The variable is Mandatory.
+                    The variable is mandatory.
                 </para>
             </glossdef>
         </glossentry>
@@ -2832,6 +3387,20 @@ recipes-graphics/xorg-font/font-alias_1.0.3.bb:PR = "${INC_PR}.3"
 
     <glossdiv id='var-glossary-l'><title>L</title>
 
+        <glossentry id='var-LABELS'><glossterm>LABELS</glossterm>
+            <glossdef>
+                <para>
+                    Provides a list of targets for automatic configuration.
+                </para>
+
+                <para>
+                    See the
+                    <link linkend='ref-classes-grub-efi'><filename>grub-efi</filename></link>
+                    class for more information on how this variable is used.
+                </para>
+            </glossdef>
+        </glossentry>
+
         <glossentry id='var-LAYERDEPENDS'><glossterm>LAYERDEPENDS</glossterm>
             <glossdef>
                 <para>Lists the layers that this recipe depends upon, separated by spaces.
@@ -3081,11 +3650,12 @@ recipes-graphics/xorg-font/font-alias_1.0.3.bb:PR = "${INC_PR}.3"
      MACHINE ?= "qemux86"
      MACHINE ?= "qemux86-64"
      MACHINE ?= "genericx86"
+     MACHINE ?= "genericx86-64"
      MACHINE ?= "beagleboard"
      MACHINE ?= "mpc8315e-rdb"
      MACHINE ?= "routerstationpro"
                     </literallayout>
-                    The last four are Yocto Project reference hardware boards, which
+                    The last five are Yocto Project reference hardware boards, which
                     are provided in the <filename>meta-yocto-bsp</filename> layer.
                     <note>Adding additional Board Support Package (BSP) layers
                         to your configuration adds new possible settings for
@@ -3255,20 +3825,23 @@ recipes-graphics/xorg-font/font-alias_1.0.3.bb:PR = "${INC_PR}.3"
 
          <glossentry id='var-MACHINE_FEATURES'><glossterm>MACHINE_FEATURES</glossterm>
             <glossdef>
-                <para>Specifies the list of hardware features the
-                    <link linkend='var-MACHINE'>MACHINE</link> supports.
-                    For example, including the "bluetooth" feature causes the
-                    <filename>bluez</filename> bluetooth daemon to be built and
-                    added to the image.
-                    It also causes the <filename>connman</filename> recipe
-                    to look at <filename>MACHINE_FEATURES</filename> and when it
-                    finds "bluetooth" there it enables the bluetooth
-                    support in ConnMan.
+                <para>
+                    Specifies the list of hardware features the
+                    <link linkend='var-MACHINE'><filename>MACHINE</filename></link> is capable
+                    of supporting.
+                    For related information on enabling features, see the
+                    <link linkend='var-DISTRO_FEATURES'><filename>DISTRO_FEATURES</filename></link>,
+                    <link linkend='var-COMBINED_FEATURES'><filename>COMBINED_FEATURES</filename></link>,
+                    and
+                    <link linkend='var-IMAGE_FEATURES'><filename>IMAGE_FEATURES</filename></link>
+                    variables.
                 </para>
 
                 <para>
-                    For a list of features supported by the Yocto Project as shipped,
-                    see the "<link linkend='ref-features-machine'>Machine</link>" section.
+                    For a list of hardware features supported by the Yocto
+                    Project as shipped, see the
+                    "<link linkend='ref-features-machine'>Machine Features</link>"
+                    section.
                 </para>
             </glossdef>
          </glossentry>
@@ -3464,7 +4037,7 @@ recipes-graphics/xorg-font/font-alias_1.0.3.bb:PR = "${INC_PR}.3"
                     <note>
                         Some recommended packages might be required for certain
                         system functionality, such as kernel modules.
-                        It is up to you to add packages with
+                        It is up to you to add packages with the
                         <link linkend='var-IMAGE_INSTALL'><filename>IMAGE_INSTALL</filename></link>
                         variable.
                     </note>
@@ -3485,6 +4058,35 @@ recipes-graphics/xorg-font/font-alias_1.0.3.bb:PR = "${INC_PR}.3"
                 </para>
             </glossdef>
         </glossentry>
+
+        <glossentry id='var-NOHDD'><glossterm>NOHDD</glossterm>
+            <glossdef>
+                <para>
+                    Causes the OpenEmbedded build system to skip building the
+                    <filename>.hddimg</filename> image.
+                    The <filename>NOHDD</filename> variable is used with the
+                    <link linkend='ref-classes-bootimg'><filename>buildimg</filename></link>
+                    class.
+                    Set the variable to "1" to prevent the
+                    <filename>.hddimg</filename> image from being built.
+                </para>
+            </glossdef>
+        </glossentry>
+
+        <glossentry id='var-NOISO'><glossterm>NOISO</glossterm>
+            <glossdef>
+                <para>
+                    Causes the OpenEmbedded build system to skip building the
+                    ISO image.
+                    The <filename>NOISO</filename> variable is used with the
+                    <link linkend='ref-classes-bootimg'><filename>buildimg</filename></link>
+                    class.
+                    Set the variable to "1" to prevent the ISO image from
+                    being built.
+                </para>
+            </glossdef>
+        </glossentry>
+
     </glossdiv>
 
     <glossdiv id='var-glossary-o'><title>O</title>
@@ -3643,7 +4245,7 @@ recipes-graphics/xorg-font/font-alias_1.0.3.bb:PR = "${INC_PR}.3"
                 <para>Enables easily adding packages to
                 <filename><link linkend='var-PACKAGES'>PACKAGES</link></filename>
                 before <filename>${<link linkend='var-PN'>PN</link>}</filename>
-                so that the packages can pick up files that would normally be
+                so that those added packages can pick up files that would normally be
                 included in the default package.</para>
             </glossdef>
         </glossentry>
@@ -3861,7 +4463,7 @@ recipes-graphics/xorg-font/font-alias_1.0.3.bb:PR = "${INC_PR}.3"
                             <literallayout class='monospaced'>
      PACKAGECONFIG="f4 f5"
                             </literallayout>
-                            Or, you can just amended the variable:
+                            Or, you can just append the variable:
                             <literallayout class='monospaced'>
      PACKAGECONFIG_append = " f4"
                             </literallayout></para></listitem>
@@ -3875,7 +4477,7 @@ recipes-graphics/xorg-font/font-alias_1.0.3.bb:PR = "${INC_PR}.3"
                             <literallayout class='monospaced'>
      PACKAGECONFIG_pn-&lt;recipename&gt;="f4 f5"
                             </literallayout>
-                            Or, you can just amended the variable:
+                            Or, you can just amend the variable:
                             <literallayout class='monospaced'>
      PACKAGECONFIG_append_pn-&lt;recipename&gt; = " f4"
                             </literallayout></para></listitem>
@@ -3970,15 +4572,6 @@ recipes-graphics/xorg-font/font-alias_1.0.3.bb:PR = "${INC_PR}.3"
                 </para>
             </glossdef>
         </glossentry>
-
-
-
-
-PARALLEL_MAKEINST with the description ".
-
-
-
-
 
         <glossentry id='var-PATCHRESOLVE'><glossterm>PATCHRESOLVE</glossterm>
             <glossdef>
@@ -4076,6 +4669,11 @@ PARALLEL_MAKEINST with the description ".
                     <filename>do_packagedata</filename> task packages
                     data for each recipe and installs it into this temporary,
                     shared area.
+                    This directory defaults to the following:
+                    <literallayout class='monospaced'>
+     ${STAGING_DIR_HOST}/pkgdata
+                    </literallayout>
+                    Do not change this default.
                 </para>
             </glossdef>
         </glossentry>
@@ -4144,6 +4742,30 @@ PARALLEL_MAKEINST with the description ".
             </glossdef>
         </glossentry>
 
+        <glossentry id='var-PNBLACKLIST'><glossterm>PNBLACKLIST</glossterm>
+            <glossdef>
+                <para>
+                    Lists recipes you do not want the OpenEmbedded build system
+                    to build.
+                    This variable works in conjunction with the
+                    <link linkend='ref-classes-blacklist'><filename>blacklist</filename></link>
+                    class, which the recipe must inherit globally.
+                </para>
+
+                <para>
+                    To prevent a recipe from being built, inherit the class
+                    globally and use the variable in your
+                    <filename>local.conf</filename> file.
+                    Here is an example that prevents
+                    <filename>myrecipe</filename> from being built:
+                    <literallayout class='monospaced'>
+     INHERIT += "blacklist"
+     PNBLACKLIST[myrecipe] = "Not supported by our organization."
+                    </literallayout>
+                </para>
+            </glossdef>
+        </glossentry>
+
         <glossentry id='var-PR'><glossterm>PR</glossterm>
             <glossdef>
                 <para>The revision of the recipe.
@@ -4161,9 +4783,11 @@ PARALLEL_MAKEINST with the description ".
                     provided item, and you should set it to the
                     <link linkend='var-PN'><filename>PN</filename></link>
                     of the recipe to which you want to give precedence.
-                    Here is an example:
+                    Some examples:
                     <literallayout class='monospaced'>
+     PREFERRED_PROVIDER_virtual/kernel ?= "linux-yocto"
      PREFERRED_PROVIDER_virtual/xserver = "xserver-xf86"
+     PREFERRED_PROVIDER_virtual/libgl ?= "mesa"
                     </literallayout>
                 </para>
             </glossdef>
@@ -4176,7 +4800,7 @@ PARALLEL_MAKEINST with the description ".
                     variable determines which recipe should be given preference.
                     You must always suffix the variable with the
                     <link linkend='var-PN'><filename>PN</filename></link>
-                    you want to select, and you should set to the
+                    you want to select, and you should set the
                     <link linkend='var-PV'><filename>PV</filename></link>
                     accordingly for precedence.
                     You can use the "<filename>%</filename>" character as a
@@ -4185,8 +4809,8 @@ PARALLEL_MAKEINST with the description ".
                     numbers that could potentially change.
                     Here are two examples:
                     <literallayout class='monospaced'>
-     PREFERRED_VERSION_python = "2.6.6"
-     PREFERRED_VERSION_linux-yocto = "3.0+git%"
+     PREFERRED_VERSION_python = "2.7.3"
+     PREFERRED_VERSION_linux-yocto = "3.10%"
                     </literallayout>
                 </para>
             </glossdef>
@@ -4244,7 +4868,7 @@ PARALLEL_MAKEINST with the description ".
                     dynamically increment.
                     This increment minimizes the impact of layer ordering.</para>
                 <para>In order to ensure multiple <filename>.bbappend</filename> files can co-exist,
-                    <filename>PRINC</filename> should be self referencing.
+                    <filename>PRINC</filename> should be self-referencing.
                     This variable defaults to 0.</para>
                 <para>Following is an example that increments <filename>PR</filename> by two:
                     <literallayout class='monospaced'>
@@ -4471,6 +5095,24 @@ PARALLEL_MAKEINST with the description ".
             </glossdef>
         </glossentry>
 
+        <glossentry id='var-REQUIRED_DISTRO_FEATURES'><glossterm>REQUIRED_DISTRO_FEATURES</glossterm>
+            <glossdef>
+                <para>
+                    When a recipe inherits the
+                    <filename>distro_features_check</filename> class, this
+                    variable identifies distribution features that must
+                    exist in the current configuration in order for the
+                    OpenEmbedded build system to build the recipe.
+                    In other words, if the
+                    <filename>REQUIRED_DISTRO_FEATURES</filename> variable
+                    lists a feature that does not appear in
+                    <filename>DISTRO_FEATURES</filename> within the
+                    current configuration, an error occurs and the
+                    build stops.
+                </para>
+            </glossdef>
+        </glossentry>
+
         <glossentry id='var-RM_OLD_IMAGE'><glossterm>RM_OLD_IMAGE</glossterm>
             <glossdef>
                 <para>
@@ -4497,6 +5139,22 @@ PARALLEL_MAKEINST with the description ".
                     should not be removed.
                     See the "<link linkend='ref-classes-rm-work'>Removing Work Files During the Build - <filename>rm_work.bbclass</filename></link>"
                     section for more details.
+                </para>
+            </glossdef>
+        </glossentry>
+
+        <glossentry id='var-ROOTFS'><glossterm>ROOTFS</glossterm>
+            <glossdef>
+                <para>
+                    Indicates a filesystem image to include as the root
+                    filesystem.
+                </para>
+
+                <para>
+                    The <filename>ROOTFS</filename> variable is an optional
+                    variable used with the
+                    <link linkend='ref-classes-bootimg'><filename>buildimg</filename></link>
+                    class.
                 </para>
             </glossdef>
         </glossentry>
@@ -4703,7 +5361,7 @@ PARALLEL_MAKEINST with the description ".
                     The location in the
                     <ulink url='&YOCTO_DOCS_DEV_URL;#build-directory'>Build Directory</ulink>
                     where unpacked recipe source code resides.
-                    This location is within the working directory
+                    This location is within the work directory
                     (<filename><link linkend='var-WORKDIR'>WORKDIR</link></filename>),
                     which is not static.
                     The unpacked source location depends on the recipe name
@@ -4712,17 +5370,17 @@ PARALLEL_MAKEINST with the description ".
                     (<filename><link linkend='var-PV'>PV</link></filename>) as
                     follows:
                     <literallayout class='monospaced'>
- ${WORKDIR}/${PN}-${PV}
+     ${WORKDIR}/${PN}-${PV}
                     </literallayout>
                     As an example, assume a
                     <ulink url='&YOCTO_DOCS_DEV_URL;#source-directory'>Source Directory</ulink>
                     top-level folder named <filename>poky</filename> and a
                     default Build Directory at <filename>poky/build</filename>.
-                    In this case, the working directory the build system uses
+                    In this case, the work directory the build system uses
                     to keep the unpacked recipe for <filename>db</filename>
                     is the following:
                     <literallayout class='monospaced'>
- ~/poky/build/tmp/work/qemux86-poky-linux/db/5.1.19-r3/db-5.1.19
+     poky/build/tmp/work/qemux86-poky-linux/db/5.1.19-r3/db-5.1.19
                     </literallayout>
                 </para>
             </glossdef>
@@ -4904,12 +5562,12 @@ PARALLEL_MAKEINST with the description ".
                     Use of this variable is one mechanism to remove dependencies
                     that affect task signatures and thus force rebuilds when a
                     recipe changes.
-                    <caution>
+                    <note><title>Caution</title>
                         If you add an inappropriate dependency for a recipe
                         relationship, the software might break during
                         runtime if the interface of the second recipe was
                         changed after the first recipe had been built.
-                    </caution>
+                    </note>
                 </para>
             </glossdef>
         </glossentry>
@@ -4924,12 +5582,12 @@ PARALLEL_MAKEINST with the description ".
                     Use of this variable is one way to remove dependencies from
                     one recipe on another that affect task signatures and
                     thus force rebuilds when the recipe changes.
-                    <caution>
+                    <note><title>Caution</title>
                         If you add an inappropriate variable to this list,
                         the software might break at runtime if the
                         interface of the recipe was changed after the other
                         had been built.
-                    </caution>
+                    </note>
                 </para>
             </glossdef>
         </glossentry>
@@ -5219,7 +5877,7 @@ PARALLEL_MAKEINST with the description ".
                     Source Directory defines <filename>PV</filename> as
                     follows:
                     <literallayout class='monospaced'>
-     PV = "1.5.0+git${SRCPV}"
+     PV = "0.12-git${SRCPV}"
                     </literallayout>
                 </para>
             </glossdef>
@@ -5706,6 +6364,45 @@ PARALLEL_MAKEINST with the description ".
 
     <glossdiv id='var-glossary-u'><title>U</title>
 
+        <glossentry id='var-UBOOT_CONFIG'><glossterm>UBOOT_CONFIG</glossterm>
+            <glossdef>
+                <para>
+                    Configures the
+                    <link linkend='var-UBOOT_MACHINE'><filename>UBOOT_MACHINE</filename></link>
+                    and can also define
+                    <link linkend='var-IMAGE_FSTYPES'><filename>IMAGE_FSTYPES</filename></link>
+                    for individual cases.
+                </para>
+
+                <para>
+                    Following is an example from the
+                    <filename>meta-fsl-arm</filename> layer.
+                    <literallayout class='monospaced'>
+     UBOOT_CONFIG ??= "sd"
+     UBOOT_CONFIG[sd] = "mx6qsabreauto_config,sdcard"
+     UBOOT_CONFIG[eimnor] = "mx6qsabreauto_eimnor_config"
+     UBOOT_CONFIG[nand] = "mx6qsabreauto_nand_config,ubifs"
+     UBOOT_CONFIG[spinor] = "mx6qsabreauto_spinor_config"
+                    </literallayout>
+                    In this example, "sd" is selected as the configuration
+                    of the possible four for the
+                    <filename>UBOOT_MACHINE</filename>.
+                    The "sd" configuration defines "mx6qsabreauto_config"
+                    as the value for <filename>UBOOT_MACHINE</filename>, while
+                    the "sdcard" specifies the
+                    <filename>IMAGE_FSTYPES</filename> to use for the U-boot
+                    image.
+                </para>
+
+                <para>
+                    For more information on how the
+                    <filename>UBOOT_CONFIG</filename> is handled, see the
+                    <ulink url='http://git.yoctoproject.org/cgit/cgit.cgi/poky/tree/meta/classes/uboot-config.bbclass'><filename>uboot-config</filename></ulink>
+                    class.
+                </para>
+            </glossdef>
+        </glossentry>
+
         <glossentry id='var-UBOOT_ENTRYPOINT'><glossterm>UBOOT_ENTRYPOINT</glossterm>
             <glossdef>
                 <para>
@@ -5730,6 +6427,22 @@ PARALLEL_MAKEINST with the description ".
             </glossdef>
         </glossentry>
 
+        <glossentry id='var-UBOOT_LOCALVERSION'><glossterm>UBOOT_LOCALVERSION</glossterm>
+            <glossdef>
+                <para>
+                    Appends a string to the name of the local version of the
+                    U-Boot image.
+                    For example, assuming the version of the U-Boot image
+                    built was "2013.10, the full version string reported by
+                    U-Boot would be "2013.10-yocto" given the following
+                    statement:
+                    <literallayout class='monospaced'>
+     UBOOT_LOCALVERSION = "-yocto"
+                    </literallayout>
+                </para>
+            </glossdef>
+        </glossentry>
+
         <glossentry id='var-UBOOT_MACHINE'><glossterm>UBOOT_MACHINE</glossterm>
             <glossdef>
                 <para>
@@ -5740,6 +6453,31 @@ PARALLEL_MAKEINST with the description ".
                     You typically set this variable from the machine
                     configuration file (i.e.
                     <filename>conf/machine/&lt;machine_name&gt;.conf</filename>).
+                </para>
+            </glossdef>
+        </glossentry>
+
+        <glossentry id='var-UBOOT_MAKE_TARGET'><glossterm>UBOOT_MAKE_TARGET</glossterm>
+            <glossdef>
+                <para>
+                    Specifies the target called in the
+                    <filename>Makefile</filename>.
+                    The default target is "all".
+                </para>
+            </glossdef>
+        </glossentry>
+
+        <glossentry id='var-UBOOT_SUFFIX'><glossterm>UBOOT_SUFFIX</glossterm>
+            <glossdef>
+                <para>
+                    Points to the generated U-Boot extension.
+                    For example, <filename>u-boot.sb</filename> has a
+                    <filename>.sb</filename> extension.
+                </para>
+
+                <para>
+                    The default U-Boot extension is
+                    <filename>.bin</filename>
                 </para>
             </glossdef>
         </glossentry>
@@ -5781,6 +6519,63 @@ PARALLEL_MAKEINST with the description ".
             </glossdef>
         </glossentry>
 
+        <glossentry id='var-USERADD_PACKAGES'><glossterm>USERADD_PACKAGES</glossterm>
+            <glossdef>
+                <para>
+                    When a recipe inherits the
+                    <filename>useradd</filename> class, this variable
+                    specifies the individual packages within the recipe that
+                    require users and/or groups to be added.
+                </para>
+
+                <para>
+                    You must set this variable if the recipe inherits the
+                    class.
+                    For example, the following enables adding a user for the
+                    main package in a recipe:
+                    <literallayout class='monospaced'>
+     USERADD_PACKAGES = "${PN}"
+                    </literallayout>
+                    <note>
+                        If follows that if you are going to use the
+                        <filename>USERADD_PACKAGES</filename> variable,
+                        you need to set one or more of the
+                        <link linkend='var-USERADD_PARAM'><filename>USERADD_PARAM</filename></link>,
+                        <link linkend='var-GROUPADD_PARAM'><filename>GROUPADD_PARAM</filename></link>,
+                        or
+                        <link linkend='var-GROUPMEMS_PARAM'><filename>GROUPMEMS_PARAM</filename></link>
+                        variables.
+                    </note>
+                </para>
+
+            </glossdef>
+        </glossentry>
+
+        <glossentry id='var-USERADD_PARAM'><glossterm>USERADD_PARAM</glossterm>
+            <glossdef>
+                <para>
+                    When a recipe inherits the
+                    <filename>useradd</filename> class, this variable
+                    specifies for a package what parameters should be passed
+                    to the <filename>useradd</filename> command
+                    if you wish to add a user to the system when the package
+                    is installed.
+                </para>
+
+                <para>
+                    Here is an example from the <filename>dbus</filename>
+                    recipe:
+                    <literallayout class='monospaced'>
+     USERADD_PARAM_${PN} = "--system --home ${localstatedir}/lib/dbus \
+                            --no-create-home --shell /bin/false \
+                            --user-group messagebus"
+                    </literallayout>
+                    For information on the standard Linux shell command
+                    <filename>useradd</filename>, see
+                    <ulink url='http://linux.die.net/man/8/useradd'></ulink>.
+                </para>
+            </glossdef>
+        </glossentry>
     </glossdiv>
 
 <!--            <glossdiv id='var-glossary-v'><title>V</title>-->
@@ -5806,7 +6601,7 @@ PARALLEL_MAKEINST with the description ".
         <glossentry id='var-WORKDIR'><glossterm>WORKDIR</glossterm>
             <glossdef>
                 <para>
-                    The pathname of the working directory in which the OpenEmbedded build system
+                    The pathname of the work directory in which the OpenEmbedded build system
                     builds a recipe.
                     This directory is located within the
                     <link linkend='var-TMPDIR'><filename>TMPDIR</filename></link> directory structure and changes
@@ -5830,34 +6625,34 @@ PARALLEL_MAKEINST with the description ".
                     For packages that are not dependent on a particular machine,
                     <filename>WORKDIR</filename> is defined as follows:
                     <literallayout class='monospaced'>
- ${TMPDIR}/work/${PACKAGE_ARCH}-poky-${TARGET_OS}/${PN}/${PV}-${PR}
+     ${TMPDIR}/work/${PACKAGE_ARCH}-poky-${TARGET_OS}/${PN}/${PV}-${PR}
                     </literallayout>
                     As an example, assume a
                     <ulink url='&YOCTO_DOCS_DEV_URL;#source-directory'>Source Directory</ulink> top-level
                     folder name <filename>poky</filename> and a default
                     <ulink url='&YOCTO_DOCS_DEV_URL;#build-directory'>Build Directory</ulink>
                     at <filename>poky/build</filename>.
-                    In this case, the working directory the build system uses to build
+                    In this case, the work directory the build system uses to build
                     the <filename>v86d</filename> package is the following:
                     <literallayout class='monospaced'>
-     ~/poky/build/tmp/work/qemux86-poky-linux/v86d/01.9-r0
+     poky/build/tmp/work/qemux86-poky-linux/v86d/01.9-r0
                     </literallayout>
                 </para>
 
                 <para>
                     For packages that are dependent on a particular machine, <filename>WORKDIR</filename>
-                    is defined slightly different:
+                    is defined slightly differently:
                     <literallayout class='monospaced'>
- ${TMPDIR}/work/${MACHINE}-poky-${TARGET_OS}/${PN}/${PV}-${PR}
+     ${TMPDIR}/work/${MACHINE}-poky-${TARGET_OS}/${PN}/${PV}-${PR}
                     </literallayout>
                     As an example, again assume a Source Directory top-level folder
                     named <filename>poky</filename> and a default Build Directory
                     at <filename>poky/build</filename>.
-                    In this case, the working directory the build system uses to build
+                    In this case, the work directory the build system uses to build
                     the <filename>acl</filename> recipe, which is being built for a
                     MIPS-based device, is the following:
                     <literallayout class='monospaced'>
-     ~/poky/build/tmp/work/mips-poky-linux/acl/2.2.51-r2
+     poky/build/tmp/work/mips-poky-linux/acl/2.2.51-r2
                     </literallayout>
                 </para>
             </glossdef>

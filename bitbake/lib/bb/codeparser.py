@@ -35,7 +35,7 @@ def check_indent(codestr):
 
 class CodeParserCache(MultiProcessCache):
     cache_file_name = "bb_codeparser.dat"
-    CACHE_VERSION = 3
+    CACHE_VERSION = 4
 
     def __init__(self):
         MultiProcessCache.__init__(self)
@@ -64,6 +64,8 @@ class CodeParserCache(MultiProcessCache):
         for h in data[0]:
             data[0][h]["refs"] = self.internSet(data[0][h]["refs"])
             data[0][h]["execs"] = self.internSet(data[0][h]["execs"])
+            for k in data[0][h]["contains"]:
+                data[0][h]["contains"][k] = self.internSet(data[0][h]["contains"][k])
         for h in data[1]:
             data[1][h]["execs"] = self.internSet(data[1][h]["execs"])
         return
@@ -122,7 +124,13 @@ class PythonParser():
         name = self.called_node_name(node.func)
         if name in self.getvars or name in self.containsfuncs:
             if isinstance(node.args[0], ast.Str):
-                self.var_references.add(node.args[0].s)
+                varname = node.args[0].s
+                if name in self.containsfuncs and isinstance(node.args[1], ast.Str):
+                    if varname not in self.contains:
+                        self.contains[varname] = set()
+                    self.contains[varname].add(node.args[1].s)
+                else:                      
+                    self.references.add(node.args[0].s)
             else:
                 self.warn(node.func, node.args[0])
         elif name in self.execfuncs:
@@ -147,11 +155,11 @@ class PythonParser():
                 break
 
     def __init__(self, name, log):
-        self.var_references = set()
         self.var_execs = set()
+        self.contains = {}
         self.execs = set()
         self.references = set()
-        self.log = BufferedLogger('BitBake.Data.%s' % name, logging.DEBUG, log)
+        self.log = BufferedLogger('BitBake.Data.PythonParser', logging.DEBUG, log)
 
         self.unhandled_message = "in call of %s, argument '%s' is not a string literal"
         self.unhandled_message = "while parsing %s, %s" % (name, self.unhandled_message)
@@ -162,13 +170,14 @@ class PythonParser():
         if h in codeparsercache.pythoncache:
             self.references = codeparsercache.pythoncache[h]["refs"]
             self.execs = codeparsercache.pythoncache[h]["execs"]
+            self.contains = codeparsercache.pythoncache[h]["contains"]
             return
 
         if h in codeparsercache.pythoncacheextras:
             self.references = codeparsercache.pythoncacheextras[h]["refs"]
             self.execs = codeparsercache.pythoncacheextras[h]["execs"]
+            self.contains = codeparsercache.pythoncacheextras[h]["contains"]
             return
-
 
         code = compile(check_indent(str(node)), "<string>", "exec",
                        ast.PyCF_ONLY_AST)
@@ -177,12 +186,12 @@ class PythonParser():
             if n.__class__.__name__ == "Call":
                 self.visit_Call(n)
 
-        self.references.update(self.var_references)
         self.references.update(self.var_execs)
 
         codeparsercache.pythoncacheextras[h] = {}
         codeparsercache.pythoncacheextras[h]["refs"] = self.references
         codeparsercache.pythoncacheextras[h]["execs"] = self.execs
+        codeparsercache.pythoncacheextras[h]["contains"] = self.contains
 
 class ShellParser():
     def __init__(self, name, log):

@@ -507,7 +507,7 @@ def fetcher_compare_revisions(d):
 def mirror_from_string(data):
     return [ i.split() for i in (data or "").replace('\\n','\n').split('\n') if i ]
 
-def verify_checksum(u, ud, d):
+def verify_checksum(ud, d):
     """
     verify the MD5 and SHA256 checksum for downloaded src
 
@@ -530,7 +530,7 @@ def verify_checksum(u, ud, d):
             raise NoChecksumError('No checksum specified for %s, please add at least one to the recipe:\n'
                              'SRC_URI[%s] = "%s"\nSRC_URI[%s] = "%s"' %
                              (ud.localpath, ud.md5_name, md5data,
-                              ud.sha256_name, sha256data), u)
+                              ud.sha256_name, sha256data), ud.url)
 
         # Log missing sums so user can more easily add them
         if ud.md5_expected == None:
@@ -568,10 +568,10 @@ def verify_checksum(u, ud, d):
         msg = msg + '\nIf this change is expected (e.g. you have upgraded to a new version without updating the checksums) then you can use these lines within the recipe:\nSRC_URI[%s] = "%s"\nSRC_URI[%s] = "%s"\nOtherwise you should retry the download and/or check with upstream to determine if the file has become corrupted or otherwise unexpectedly modified.\n' % (ud.md5_name, md5data, ud.sha256_name, sha256data)
 
     if len(msg):
-        raise ChecksumError('Checksum mismatch!%s' % msg, u, md5data)
+        raise ChecksumError('Checksum mismatch!%s' % msg, ud.url, md5data)
 
 
-def update_stamp(u, ud, d):
+def update_stamp(ud, d):
     """
         donestamp is file stamp indicating the whole fetching is done
         this function update the stamp after verifying the checksum
@@ -584,7 +584,7 @@ def update_stamp(u, ud, d):
             # Errors aren't fatal here
             pass
     else:
-        verify_checksum(u, ud, d)
+        verify_checksum(ud, d)
         open(ud.donestamp, 'w').close()
 
 def subprocess_setup():
@@ -619,7 +619,7 @@ def get_srcrev(d):
         raise FetchError("SRCREV was used yet no valid SCM was found in SRC_URI")
 
     if len(scms) == 1 and len(urldata[scms[0]].names) == 1:
-        autoinc, rev = urldata[scms[0]].method.sortable_revision(scms[0], urldata[scms[0]], d, urldata[scms[0]].names[0])
+        autoinc, rev = urldata[scms[0]].method.sortable_revision(urldata[scms[0]], d, urldata[scms[0]].names[0])
         if len(rev) > 10:
             rev = rev[:10]
         if autoinc:
@@ -637,7 +637,7 @@ def get_srcrev(d):
     for scm in scms:
         ud = urldata[scm]
         for name in ud.names:
-            autoinc, rev = ud.method.sortable_revision(scm, ud, d, name)
+            autoinc, rev = ud.method.sortable_revision(ud, d, name)
             seenautoinc = seenautoinc or autoinc
             if len(rev) > 10:
                 rev = rev[:10]
@@ -730,7 +730,7 @@ def build_mirroruris(origud, mirrors, ld):
     replacements["BASENAME"] = origud.path.split("/")[-1]
     replacements["MIRRORNAME"] = origud.host.replace(':','.') + origud.path.replace('/', '.').replace('*', '.')
 
-    def adduri(uri, ud, uris, uds):
+    def adduri(ud, uris, uds):
         for line in mirrors:
             try:
                 (find, replace) = line
@@ -753,9 +753,9 @@ def build_mirroruris(origud, mirrors, ld):
             uris.append(newuri)
             uds.append(newud)
 
-            adduri(newuri, newud, uris, uds)
+            adduri(newud, uris, uds)
 
-    adduri(None, origud, uris, uds)
+    adduri(origud, uris, uds)
 
     return uris, uds
 
@@ -772,22 +772,22 @@ def rename_bad_checksum(ud, suffix):
     bb.utils.movefile(ud.localpath, new_localpath)
 
 
-def try_mirror_url(newuri, origud, ud, ld, check = False):
+def try_mirror_url(origud, ud, ld, check = False):
     # Return of None or a value means we're finished
     # False means try another url
     try:
         if check:
-            found = ud.method.checkstatus(newuri, ud, ld)
+            found = ud.method.checkstatus(ud, ld)
             if found:
                 return found
             return False
 
         os.chdir(ld.getVar("DL_DIR", True))
 
-        if not os.path.exists(ud.donestamp) or ud.method.need_update(newuri, ud, ld):
-            ud.method.download(newuri, ud, ld)
+        if not os.path.exists(ud.donestamp) or ud.method.need_update(ud, ld):
+            ud.method.download(ud, ld)
             if hasattr(ud.method,"build_mirror_data"):
-                ud.method.build_mirror_data(newuri, ud, ld)
+                ud.method.build_mirror_data(ud, ld)
 
         if not ud.localpath or not os.path.exists(ud.localpath):
             return False
@@ -805,6 +805,10 @@ def try_mirror_url(newuri, origud, ud, ld, check = False):
             dest = os.path.join(dldir, os.path.basename(ud.localpath))
             if not os.path.exists(dest):
                 os.symlink(ud.localpath, dest)
+            if not os.path.exists(origud.donestamp) or origud.method.need_update(origud, ld):
+                origud.method.download(origud, ld)
+                if hasattr(ud.method,"build_mirror_data"):
+                    origud.method.build_mirror_data(origud, ld)
             return None
         # Otherwise the result is a local file:// and we symlink to it
         if not os.path.exists(origud.localpath):
@@ -813,7 +817,7 @@ def try_mirror_url(newuri, origud, ud, ld, check = False):
                 os.unlink(origud.localpath)
 
             os.symlink(ud.localpath, origud.localpath)
-        update_stamp(newuri, origud, ld)
+        update_stamp(origud, ld)
         return ud.localpath
 
     except bb.fetch2.NetworkAccess:
@@ -821,13 +825,13 @@ def try_mirror_url(newuri, origud, ud, ld, check = False):
 
     except bb.fetch2.BBFetchException as e:
         if isinstance(e, ChecksumError):
-            logger.warn("Mirror checksum failure for url %s (original url: %s)\nCleaning and trying again." % (newuri, origud.url))
+            logger.warn("Mirror checksum failure for url %s (original url: %s)\nCleaning and trying again." % (ud.url, origud.url))
             logger.warn(str(e))
             rename_bad_checksum(ud, e.checksum)
         elif isinstance(e, NoChecksumError):
             raise
         else:
-            logger.debug(1, "Mirror fetch failure for url %s (original url: %s)" % (newuri, origud.url))
+            logger.debug(1, "Mirror fetch failure for url %s (original url: %s)" % (ud.url, origud.url))
             logger.debug(1, str(e))
         try:
             ud.method.clean(ud, ld)
@@ -849,7 +853,7 @@ def try_mirrors(d, origud, mirrors, check = False):
     uris, uds = build_mirroruris(origud, mirrors, ld)
 
     for index, uri in enumerate(uris):
-        ret = try_mirror_url(uri, origud, uds[index], ld, check)
+        ret = try_mirror_url(origud, uds[index], ld, check)
         if ret != False:
             return ret
     return None
@@ -884,7 +888,7 @@ def srcrev_internal_helper(ud, d, name):
             var = "SRCREV_%s_pn-%s" % (name, pn)
         raise FetchError("Please set %s to a valid value" % var, ud.url)
     if rev == "AUTOINC":
-        rev = ud.method.latest_revision(ud.url, ud, d, name)
+        rev = ud.method.latest_revision(ud, d, name)
 
     return rev
 
@@ -1005,7 +1009,7 @@ class FetchData(object):
 
         self.method = None
         for m in methods:
-            if m.supports(url, self, d):
+            if m.supports(self, d):
                 self.method = m
                 break                
 
@@ -1027,7 +1031,7 @@ class FetchData(object):
             self.localpath = self.parm["localpath"]
             self.basename = os.path.basename(self.localpath)
         elif self.localfile:
-            self.localpath = self.method.localpath(self.url, self, d)
+            self.localpath = self.method.localpath(self, d)
 
         dldir = d.getVar("DL_DIR", True)
         # Note: .done and .lock files should always be in DL_DIR whereas localpath may not be.
@@ -1051,7 +1055,7 @@ class FetchData(object):
 
     def setup_localpath(self, d):
         if not self.localpath:
-            self.localpath = self.method.localpath(self.url, self, d)
+            self.localpath = self.method.localpath(self, d)
 
     def getSRCDate(self, d):
         """
@@ -1075,13 +1079,13 @@ class FetchMethod(object):
     def __init__(self, urls = []):
         self.urls = []
 
-    def supports(self, url, urldata, d):
+    def supports(self, urldata, d):
         """
         Check to see if this fetch class supports a given url.
         """
         return 0
 
-    def localpath(self, url, urldata, d):
+    def localpath(self, urldata, d):
         """
         Return the local filename of a given url assuming a successful fetch.
         Can also setup variables in urldata for use in go (saving code duplication
@@ -1125,7 +1129,7 @@ class FetchMethod(object):
 
     urls = property(getUrls, setUrls, None, "Urls property")
 
-    def need_update(self, url, ud, d):
+    def need_update(self, ud, d):
         """
         Force a fetch, even if localpath exists?
         """
@@ -1139,7 +1143,7 @@ class FetchMethod(object):
         """
         return False
 
-    def download(self, url, urldata, d):
+    def download(self, urldata, d):
         """
         Fetch urls
         Assumes localpath was called first
@@ -1263,13 +1267,13 @@ class FetchMethod(object):
        """
        bb.utils.remove(urldata.localpath)
 
-    def try_premirror(self, url, urldata, d):
+    def try_premirror(self, urldata, d):
         """
         Should premirrors be used?
         """
         return True
 
-    def checkstatus(self, url, urldata, d):
+    def checkstatus(self, urldata, d):
         """
         Check the status of a URL
         Assumes localpath was called first
@@ -1277,7 +1281,7 @@ class FetchMethod(object):
         logger.info("URL %s could not be checked for status since no method exists.", url)
         return True
 
-    def latest_revision(self, url, ud, d, name):
+    def latest_revision(self, ud, d, name):
         """
         Look in the cache for the latest revision, if not present ask the SCM.
         """
@@ -1285,19 +1289,19 @@ class FetchMethod(object):
             raise ParameterError("The fetcher for this URL does not support _latest_revision", url)
 
         revs = bb.persist_data.persist('BB_URI_HEADREVS', d)
-        key = self.generate_revision_key(url, ud, d, name)
+        key = self.generate_revision_key(ud, d, name)
         try:
             return revs[key]
         except KeyError:
-            revs[key] = rev = self._latest_revision(url, ud, d, name)
+            revs[key] = rev = self._latest_revision(ud, d, name)
             return rev
 
-    def sortable_revision(self, url, ud, d, name):
-        latest_rev = self._build_revision(url, ud, d, name)
+    def sortable_revision(self, ud, d, name):
+        latest_rev = self._build_revision(ud, d, name)
         return True, str(latest_rev)
 
-    def generate_revision_key(self, url, ud, d, name):
-        key = self._revision_key(url, ud, d, name)
+    def generate_revision_key(self, ud, d, name):
+        key = self._revision_key(ud, d, name)
         return "%s-%s" % (key, d.getVar("PN", True) or "")
 
 class Fetch(object):
@@ -1368,9 +1372,9 @@ class Fetch(object):
             try:
                 self.d.setVar("BB_NO_NETWORK", network)
  
-                if os.path.exists(ud.donestamp) and not m.need_update(u, ud, self.d):
+                if os.path.exists(ud.donestamp) and not m.need_update(ud, self.d):
                     localpath = ud.localpath
-                elif m.try_premirror(u, ud, self.d):
+                elif m.try_premirror(ud, self.d):
                     logger.debug(1, "Trying PREMIRRORS")
                     mirrors = mirror_from_string(self.d.getVar('PREMIRRORS', True))
                     localpath = try_mirrors(self.d, ud, mirrors, False)
@@ -1381,16 +1385,16 @@ class Fetch(object):
                 os.chdir(self.d.getVar("DL_DIR", True))
 
                 firsterr = None
-                if not localpath and ((not os.path.exists(ud.donestamp)) or m.need_update(u, ud, self.d)):
+                if not localpath and ((not os.path.exists(ud.donestamp)) or m.need_update(ud, self.d)):
                     try:
                         logger.debug(1, "Trying Upstream")
-                        m.download(u, ud, self.d)
+                        m.download(ud, self.d)
                         if hasattr(m, "build_mirror_data"):
-                            m.build_mirror_data(u, ud, self.d)
+                            m.build_mirror_data(ud, self.d)
                         localpath = ud.localpath
                         # early checksum verify, so that if checksum mismatched,
                         # fetcher still have chance to fetch from mirror
-                        update_stamp(u, ud, self.d)
+                        update_stamp(ud, self.d)
 
                     except bb.fetch2.NetworkAccess:
                         raise
@@ -1417,7 +1421,7 @@ class Fetch(object):
                         logger.error(str(firsterr))
                     raise FetchError("Unable to fetch URL from any source.", u)
 
-                update_stamp(u, ud, self.d)
+                update_stamp(ud, self.d)
 
             except BBFetchException as e:
                 if isinstance(e, NoChecksumError):
@@ -1448,7 +1452,7 @@ class Fetch(object):
             if not ret:
                 # Next try checking from the original uri, u
                 try:
-                    ret = m.checkstatus(u, ud, self.d)
+                    ret = m.checkstatus(ud, self.d)
                 except:
                     # Finally, try checking uri, u, from MIRRORS
                     mirrors = mirror_from_string(self.d.getVar('MIRRORS', True))

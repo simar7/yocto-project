@@ -6,37 +6,64 @@
 <title>Classes</title>
 
 <para>
-    Class files are used to abstract common functionality and share it amongst multiple
-    <filename>.bb</filename> files.
+    Class files are used to abstract common functionality and share it amongst
+    multiple recipe (<filename>.bb</filename>) files.
+    To use a class file, you simply make sure the recipe inherits the class.
+    In most cases, when a recipe inherits a class it is enough to enable its
+    features.
+    There are cases, however, where in the recipe you might need to set
+    variables or override some default behavior.
+</para>
+
+<para>
     Any <ulink url='&YOCTO_DOCS_DEV_URL;#metadata'>Metadata</ulink> usually
-    found in a <filename>.bb</filename> file can also be placed in a class
-    file.
-    Class files are identified by the extension <filename>.bbclass</filename> and are usually placed
-    in a <filename>classes/</filename> directory beneath the
-    <filename>meta*/</filename> directory found in the
+    found in a recipe can also be placed in a class file.
+    Class files are identified by the extension <filename>.bbclass</filename>
+    and are usually placed in a <filename>classes/</filename> directory beneath
+    the <filename>meta*/</filename> directory found in the
     <ulink url='&YOCTO_DOCS_DEV_URL;#source-directory'>Source Directory</ulink>.
     Class files can also be pointed to by
     <link linkend='var-BUILDDIR'><filename>BUILDDIR</filename></link>
     (e.g. <filename>build/</filename>) in the same way as
     <filename>.conf</filename> files in the <filename>conf</filename> directory.
-    Class files are searched for in <link linkend='var-BBPATH'><filename>BBPATH</filename></link>
-    using the same method by which <filename>.conf</filename> files are searched.
-</para>
-
-<para>
-    In most cases inheriting the class is enough to enable its features, although
-    for some classes you might need to set variables or override some of the
-    default behavior.
+    Class files are searched for in
+    <link linkend='var-BBPATH'><filename>BBPATH</filename></link>
+    using the same method by which <filename>.conf</filename> files are
+    searched.
 </para>
 
 <para>
     This chapter discusses only the most useful and important classes.
-        Other classes do exist within the <filename>meta/classes</filename>
-        directory in the
-        <ulink url='&YOCTO_DOCS_DEV_URL;#source-directory'>Source Directory</ulink>.
-        You can reference the <filename>.bbclass</filename> files directly
-        for more information.
+    Other classes do exist within the <filename>meta/classes</filename>
+    directory in the
+    <ulink url='&YOCTO_DOCS_DEV_URL;#source-directory'>Source Directory</ulink>.
+    You can reference the <filename>.bbclass</filename> files directly
+    for more information.
 </para>
+
+<section id='ref-classes-allarch'>
+    <title><filename>allarch.bbclass</filename></title>
+
+    <para>
+        The all architecture (<filename>allarch</filename>) class is inherited
+        by recipes that do not produce architecture-specific output.
+        The class disables functionality that is normally needed for recipes
+        that produce executable binaries (such as building the cross-compiler
+        and a C library as pre-requisites, and splitting out of debug symbols
+        during packaging).
+    </para>
+
+    <para>
+        By default, all recipes inherit the
+        <link linkend='ref-classes-base'><filename>base</filename></link> and
+        <link linkend='ref-classes-package'><filename>package</filename></link>
+        classes, which enable functionality
+        needed for recipes that produce executable output.
+        If your recipe, for example, only produces packages that contain
+        configuration files, media files, or scripts (e.g. Python and Perl),
+        then it should inherit the <filename>allarch</filename> class.
+    </para>
+</section>
 
 <section id='ref-classes-base'>
     <title>The base Class - <filename>base.bbclass</filename></title>
@@ -184,6 +211,391 @@
     </para>
 </section>
 
+<section id='ref-classes-bin-package'>
+    <title><filename>bin_package.bbclass</filename></title>
+
+    <para>
+        The binary package (<filename>bin_package</filename>) class is a
+        helper class for recipes that extract the contents of a binary package
+        (e.g. an RPM) and install those contents rather than building the
+        binary from source.
+        The binary package is extracted and new packages in the configured
+        output package format are created.
+        <note>
+            For RPMs and other packages that do not contain a subdirectory,
+            you should specify a "subdir" parameter.
+            Here is an example where <filename>${BP}</filename> matches the
+            subdirectory expected by the default value of
+            <link linkend='var-S'><filename>S</filename></link>:
+            <literallayout class='monospaced'>
+     SRC_URI = "http://example.com/downloads/somepackage.rpm;subdir=${BP}"
+            </literallayout>
+        </note>
+    </para>
+</section>
+
+<section id='ref-classes-blacklist'>
+    <title><filename>blacklist.bbclass</filename></title>
+
+    <para>
+        The blacklist (<filename>blacklist</filename>) class prevents
+        the OpenEmbedded build system from building specific recipes
+        (blacklists them).
+        To use this class, inherit the class globally and set
+        <filename>PNBLACKLIST</filename> for each recipe you wish to blacklist.
+        Specify the <link linkend='var-PN'><filename>PN</filename></link>
+        value as a variable flag (varflag) and provide a reason, which is
+        reported, if the package is requested to be built as the value.
+        For example, if you want to blacklist a recipe called "exoticware",
+        you add the following to your <filename>local.conf</filename>
+        or distribution configuration:
+        <literallayout class='monospaced'>
+     INHERIT += "blacklist"
+     PNBLACKLIST[exoticware] = "Not supported by our organization."
+        </literallayout>
+    </para>
+</section>
+
+<section id='ref-classes-boot-directdisk'>
+    <title><filename>boot-directdisk.bbclass</filename></title>
+
+    <para>
+        The boot direct disk (<filename>boot-directdisk</filename>) class
+        creates an image that can be placed directly onto a hard disk using
+        <filename>dd</filename> and then booted.
+        The image uses SYSLINUX.
+    </para>
+
+    <para>
+        The end result is a 512 boot sector populated with a
+        Master Boot Record (MBR) and partition table followed by an MSDOS
+        FAT16 partition containing SYSLINUX and a Linux kernel completed by
+        the <filename>ext2</filename> and <filename>ext3</filename>
+        root filesystems.
+    </para>
+</section>
+
+<section id='ref-classes-bootimg'>
+    <title><filename>bootimg.bbclass</filename></title>
+
+    <para>
+        The boot image (<filename>bootimg</filename> class creates a bootable
+        image using SYSLINUX, your kernel and an optional initial RAM disk
+        (<filename>initrd</filename>).
+    </para>
+
+    <para>
+        When you use this class, two things happen:
+        <itemizedlist>
+            <listitem><para>
+                A <filename>.hddimg</filename> file is created.
+                This file which is an MSDOS filesystem that contains SYSLINUX,
+                a kernel, an <filename>initrd</filename>, and a root filesystem
+                image.
+                All three of these can be written to hard drives directly and
+                also booted on a USB flash disks using <filename>dd</filename>.
+                </para></listitem>
+            <listitem><para>
+                A CD <filename>.iso</filename> image is created.
+                When this file is booted, the <filename>initrd</filename>
+                boots and processes the label selected in SYSLINUX.
+                Actions based on the label are then performed (e.g. installing
+                to a hard drive).</para></listitem>
+        </itemizedlist>
+    </para>
+
+    <para>
+        The <filename>bootimg</filename> class supports the
+        <link linkend='var-INITRD'><filename>INITRD</filename></link>,
+        <link linkend='var-NOISO'><filename>NOISO</filename></link>,
+        <link linkend='var-NOHDD'><filename>NOHDD</filename></link>, and
+        <link linkend='var-ROOTFS'><filename>ROOTFS</filename></link>
+        variables.
+    </para>
+</section>
+
+<section id='ref-classes-bugzilla'>
+    <title><filename>bugzilla.bbclass</filename></title>
+
+    <para>
+        The Bugzilla (<filename>bugzilla</filename>) class, if enabled in
+        your instance of Bugzilla, automatically files bug reports to that
+        enabled instance in response to build failures.
+        This class uses Bugzilla's XML-RPC interface.
+    </para>
+</section>
+
+<section id='ref-classes-buildhistory'>
+    <title><filename>buildhistory.bbclass</filename></title>
+
+    <para>
+        The Build History (<filename>buildhistory</filename>) class records a
+        history of build output metadata, which can be used to detect possible
+        regressions as well as used for analysis of the build output.
+        For more information on using Build History, see the
+        "<link linkend='maintaining-build-output-quality'>Maintaining Build Output Quality</link>"
+        section.
+    </para>
+</section>
+
+<section id='ref-classes-buildstats'>
+    <title><filename>buildstats.bbclass</filename></title>
+
+    <para>
+        The Build Stats (<filename>buildstats</filename>) class records
+        performance statistics about each task executed during the build
+        (e.g. elapsed time, CPU usage, and I/O usage).
+    </para>
+
+    <para>
+        When you use this class, the output goes into the
+        <link linkend='var-BUILDSTATS_BASE'><filename>BUILDSTATS_BASE</filename></link>
+        directory, which defaults to <filename>${TMPDIR}/buildstats/</filename>.
+        You can analyze the elapsed time using
+        <filename>scripts/pybootchartgui/pybootchartgui.py</filename>, which
+        produces a cascading chart of the entire build process and can be
+        useful for highlighting bottlenecks.
+    </para>
+
+    <para>
+        To enable this class, use the
+        <link linkend='var-USER_CLASSES'><filename>USER_CLASSES</filename></link>
+        variable from your <filename>local.conf</filename> file.
+        The <filename>meta-yocto/conf/local.conf.sample</filename> file
+        in the
+        <ulink url='&YOCTO_DOCS_DEV_URL;#source-directory'>Source Directory</ulink>
+        enables this class by default.
+    </para>
+</section>
+
+<section id='ref-classes-chrpath'>
+    <title><filename>chrpath.bbclass</filename></title>
+
+    <para>
+        The change runtime search path (<filename>chrpath</filename>) class
+        is a wrapper around the "chrpath" utility, which is used during the
+        build process for <filename>nativesdk</filename> recipes to change
+        <filename>RPATH</filename> records within binaries in order to make
+        them relocatable.
+    </para>
+</section>
+
+<section id='ref-classes-ccache'>
+    <title><filename>ccache.bbclass</filename></title>
+
+    <para>
+        The C/C++ Compiler Cache (<filename>ccache</filename>) class enables
+        this cache for the build.
+        This class is used to give a minor performance boost during the build.
+        However, using the class can lead to unexpected side-effects.
+        Thus, it is recommended that you do not use this class.
+        See <ulink url='http://ccache.samba.org/'></ulink> for information on
+        the C/C++ Compiler Cache.
+    </para>
+</section>
+
+<section id='ref-classes-clutter'>
+    <title><filename>clutter.bbclass</filename></title>
+
+    <para>
+        The Clutter (<filename>clutter</filename>) class consolidates the
+        major and minor version naming and other common items used by Clutter
+        and related recipes.
+    </para>
+</section>
+
+<section id='ref-classes-cmake'>
+    <title><filename>cmake.bbclass</filename></title>
+
+    <para>
+        The CMake build system (<filename>cmake</filename>) class allows for
+        recipes that need to build software using the CMake build system.
+        You can use the
+        <link linkend='var-EXTRA_OECMAKE'><filename>EXTRA_OECMAKE</filename></link>
+        variable to specify additional configuration options to be passed on
+        the <filename>cmake</filename> command line.
+    </para>
+</section>
+
+<section id='ref-classes-cml1'>
+    <title><filename>cml1.bbclass</filename></title>
+
+    <para>
+        The <filename>cml1</filename> class provides basic support for the
+        Linux kernel style build configuration system.
+    </para>
+</section>
+
+<section id='ref-classes-copyleft_compliance'>
+    <title><filename>copyleft_compliance.bbclass</filename></title>
+
+    <para>
+        The Copyleft Compliance (<filename>copyleft_compliance</filename>) class
+        preserves source code for the purposes of license compliance.
+        This class is an alternative to the <filename>archive*</filename>
+        classes and is still used by some users even though it has been
+        deprecated in favor of the
+        <link linkend='ref-classes-archiver'><filename>archive*</filename></link>
+        classes.
+    </para>
+</section>
+
+<section id='ref-classes-core-image'>
+    <title><filename>core-image.bbclass</filename></title>
+
+    <para>
+        The Core Image (<filename>core-image</filename>) class
+        provides common definitions for the
+        <filename>core-image-*</filename> image recipes, such as support for
+        additional
+        <link linkend='var-IMAGE_FEATURES'><filename>IMAGE_FEATURES</filename></link>.
+    </para>
+</section>
+
+<section id='ref-classes-cross'>
+    <title><filename>cross.bbclass</filename></title>
+
+    <para>
+        The cross-compilation (<filename>cross</filename>) class
+        provides support for cross-compilation tools.
+    </para>
+</section>
+
+<section id='ref-classes-cross-canadian'>
+    <title><filename>cross-canadian.bbclass</filename></title>
+
+    <para>
+        The Canadian Cross (<filename>cross-canadian</filename>) class
+        provides support for Canadian Cross compilation tools for SDKs.
+        See the
+        "<link linkend='cross-development-toolchain-generation'>Cross-Development Toolchain Generation</link>"
+        section for more discussion on these cross-compilation tools.
+    </para>
+</section>
+
+<section id='ref-classes-crosssdk'>
+    <title><filename>crosssdk.bbclass</filename></title>
+
+    <para>
+        The Cross SDK (<filename>crosssdk</filename>) class
+        provides support for cross-compilation tools used for building
+        SDKs.
+        See the
+        "<link linkend='cross-development-toolchain-generation'>Cross-Development Toolchain Generation</link>"
+        section for more discussion on these cross-compilation tools.
+    </para>
+</section>
+
+<section id='ref-classes-deploy'>
+    <title><filename>deploy.bbclass</filename></title>
+
+    <para>
+        The Deploy (<filename>deploy</filename>) class handles deploying files
+        to the
+        <link linkend='var-DEPLOY_DIR_IMAGE'><filename>DEPLOY_DIR_IMAGE</filename></link>
+        directory.
+        The main function of this class is to allow the deploy step to be
+        accelerated by shared state.
+        Recipes that inherit this class should define their own
+        <filename>do_deploy</filename> function to copy the files to be
+        deployed to
+        <link linkend='var-DEPLOY_DIR'><filename>DEPLOYDIR</filename></link>,
+        and use <filename>addtask</filename> to add the task at the appropriate
+        place, which is usually after <filename>do_compile</filename> or
+        <filename>do_install</filename>.
+    </para>
+</section>
+
+<section id='ref-classes-distrodata'>
+    <title><filename>distrodata.bbclass</filename></title>
+
+    <para>
+        The Distribution Data (<filename>distrodata</filename>) class
+        provides for automatic checking for upstream recipe updates.
+    </para>
+</section>
+
+<section id='ref-classes-distro_features_check'>
+    <title><filename>distro_features_check.bbclass</filename></title>
+
+    <para>
+        The Distribution Features Check (<filename>distro_features_check</filename>) class
+        allows individual recipes to check for required and conflicting
+        <link linkend='var-DISTRO_FEATURES'><filename>DISTRO_FEATURES</filename></link>.
+    </para>
+
+    <para>
+        This class provides support for the
+        <link linkend='var-REQUIRED_DISTRO_FEATURES'><filename>REQUIRED_DISTRO_FEATURES</filename></link>
+        and
+        <link linkend='var-CONFLICT_DISTRO_FEATURES'><filename>CONFLICT_DISTRO_FEATURES</filename></link>
+        variables.
+        If any conditions specified in the recipe using the above variables are
+        not met, the recipe will be skipped.
+    </para>
+</section>
+
+<section id='ref-classes-extrausers'>
+    <title><filename>extrausers.bbclass</filename></title>
+
+    <para>
+        The extra users (<filename>extrausers</filename>) class allows
+        additional user and group configuration to be applied at the image
+        level.
+        Inheriting this class either globally or from an image recipe allows
+        additional user and group operations to be performed using the
+        <link linkend='var-EXTRA_USERS_PARAMS'><filename>EXTRA_USERS_PARAMS</filename></link>
+        variable.
+        <note>
+            The user and group operations added using the
+            <filename>extrausers</filename> class are not tied to a specific
+            recipe but can be performed across the image as a whole.
+            See the
+            <link linkend='ref-classes-useradd'><filename>useradd</filename></link>
+            class for information on how to add user and group configuration
+            to a specific recipe.
+        </note>
+    </para>
+
+    <para>
+        Here is an example that uses this class in an image recipe:
+        <literallayout class='monospaced'>
+     inherit extrausers
+     EXTRA_USERS_PARAMS = "\
+         useradd -p '' tester; \
+         groupadd developers; \
+         userdel nobody; \
+         groupdel -g video; \
+         groupmod -g 1020 developers; \
+         usermod -s /bin/sh tester; \
+         "
+        </literallayout>
+    </para>
+</section>
+
+<section id='ref-classes-fontcache'>
+    <title><filename>fontcache.bbclass</filename></title>
+
+    <para>
+        The font cache (<filename>fontcache</filename>) class generates the
+        proper post-installation and post-remove (postinst and postrm)
+        scriptlets for font packages.
+        These scriptlets call <filename>fc-cache</filename> (part of
+        <filename>Fontconfig</filename>) to add the fonts to the font
+        information cache.
+        Since the cache files are architecture-specific,
+        <filename>fc-cache</filename> runs using QEMU if the postinst
+        scriptlets need to be run on the build host during image creation.
+    </para>
+
+    <para>
+        If the fonts being installed are in packages other than the main
+        package, set
+        <link linkend='var-FONT_PACKAGES'><filename>FONT_PACKAGES</filename></link>
+        to include the packages containing the fonts.
+    </para>
+</section>
+
 <section id='ref-classes-debian'>
     <title>Debian Renaming - <filename>debian.bbclass</filename></title>
 
@@ -191,6 +603,547 @@
         This class renames packages so that they follow the Debian naming
         policy (i.e. <filename>eglibc</filename> becomes <filename>libc6</filename>
         and <filename>eglibc-devel</filename> becomes <filename>libc6-dev</filename>.)
+    </para>
+</section>
+
+<section id='ref-classes-gconf'>
+    <title><filename>gconf.bbclass</filename></title>
+
+    <para>
+        The GConf (<filename>gconf</filename>) class provides common
+        functionality for recipes that need to install GConf schemas.
+        The schemas will be put into a separate package
+        (<filename>${</filename><link linkend='var-PN'><filename>PN</filename></link><filename>}-gconf</filename>)
+        that is created automatically when this class is inherited.
+        This package uses the appropriate post-installation and post-remove
+        (postinst/postrm) scriptlets to register and unregister the schemas
+        in the target image.
+    </para>
+</section>
+
+<section id='ref-classes-gettext'>
+    <title><filename>gettext.bbclass</filename></title>
+
+    <para>
+        The GText (<filename>gettext</filename>) class provides support for
+        building software that uses the GNU <filename>gettext</filename>
+        internationalization and localization system.
+        All recipes building software that use
+        <filename>gettext</filename> should inherit this class.
+    </para>
+</section>
+
+<section id='ref-classes-gnome'>
+    <title><filename>gnome.bbclass</filename></title>
+
+    <para>
+        The GNOME (<filename>gnome</filename>) class supports recipes that
+        build software from the GNOME stack.
+        This class inherits the
+        <link linkend='ref-classes-gnomebase'><filename>gnomebase</filename></link>,
+        <link linkend='ref-classes-gtk-icon-cache'><filename>gtk-icon-cache</filename></link>,
+        <link linkend='ref-classes-gconf'><filename>gconf</filename></link> and
+        <link linkend='ref-classes-mime'><filename>mime</filename></link> classes.
+        The class also disables GLib Object System (Gobject) introspection
+        where applicable.
+    </para>
+</section>
+
+<section id='ref-classes-gnomebase'>
+    <title><filename>gnomebase.bbclass</filename></title>
+
+    <para>
+        The GNOME base (<filename>gnomebase</filename>) class is the base
+        class for recipes that build software from the GNOME stack.
+    </para>
+</section>
+
+<section id='ref-classes-grub-efi'>
+    <title><filename>grub-efi.bbclass</filename></title>
+
+    <para>
+        The GRUB Extensible Firmware Interface (<filename>grub-efi</filename>)
+        class provides <filename>grub-efi</filename>-specific functions for
+        building bootable images.
+    </para>
+
+    <para>
+        This class supports several variables:
+        <itemizedlist>
+            <listitem><para>
+                <link linkend='var-INITRD'><filename>INITRD</filename></link>:
+                Indicates a filesystem image to use as an initrd (optional).
+                </para></listitem>
+            <listitem><para>
+                <link linkend='var-ROOTFS'><filename>ROOTFS</filename></link>:
+                Indicates a filesystem image to include as the root filesystem
+                (optional).</para></listitem>
+            <listitem><para>
+                <link linkend='var-GRUB_GFXSERIAL'><filename>GRUB_GFXSERIAL</filename></link>:
+                Set this to "1" to have graphics and serial in the boot menu.
+                </para></listitem>
+            <listitem><para>
+                <link linkend='var-LABELS'><filename>LABELS</filename></link>:
+                A list of targets for the automatic configuration.
+                </para></listitem>
+            <listitem><para>
+                <link linkend='var-APPEND'><filename>APPEND</filename></link>:
+                An override list of append strings for each
+                <filename>LABEL</filename>.
+                </para></listitem>
+            <listitem><para>
+                <link linkend='var-GRUB_OPTS'><filename>GRUB_OPTS</filename></link>:
+                Additional options to add to the configuration (optional).
+                Options are delimited using semi-colon characters
+                (<filename>;</filename>).</para></listitem>
+            <listitem><para>
+                <link linkend='var-GRUB_TIMEOUT'><filename>GRUB_TIMEOUT</filename></link>:
+                Timeout before executing the default <filename>LABEL</filename>
+                (optional).
+                </para></listitem>
+       </itemizedlist>
+   </para>
+</section>
+
+<section id='ref-classes-gsettings'>
+    <title><filename>gsettings.bbclass</filename></title>
+
+    <para>
+        The GSettings (<filename>gsettings</filename>) class
+        provides common functionality for recipes that need to install
+        GSettings (glib) schemas.
+        The schemas are assumed to be part of the main package.
+        Appropriate post-installation and post-remove (postinst/postrm)
+        scriptlets are added to register and unregister the schemas in the
+        target image.
+    </para>
+</section>
+
+<section id='ref-classes-gtk-doc'>
+    <title><filename>gtk-doc.bbclass</filename></title>
+
+    <para>
+        The GIMP Toolkit Documentation (<filename>gtk-doc</filename>) class
+        is a helper class to pull in the appropriate
+        <filename>gtk-doc</filename> dependencies and disable
+        <filename>gtk-doc</filename>.
+    </para>
+</section>
+
+<section id='ref-classes-gtk-icon-cache'>
+    <title><filename>gtk-icon-cache.bbclass</filename></title>
+
+    <para>
+        The GIMP Toolkit icon cache (<filename>gtk-icon-cache</filename>) class
+        Generates the proper post-install and post-remove (postinst/postrm)
+        scriptlets for packages that use GTK+ and install icons.
+        These scriptlets call <filename>gtk-update-icon-cache</filename> to add
+        the fonts to GTK+'s icon cache.
+        Since the cache files are architecture-specific,
+        <filename>gtk-update-icon-cache</filename> is run using QEMU if the
+        postinst scriptlets need to be run on the build host during image
+        creation.
+    </para>
+</section>
+
+<section id='ref-classes-gtk-immodules-cache'>
+    <title><filename>gtk-immodules-cache.bbclass</filename></title>
+
+    <para>
+        The GIMP Toolkit input method modules
+        (<filename>gtk-immodules-cache</filename>) class
+        generates the proper post-install and post-remove (postinst/postrm)
+        scriptlets for packages that install GTK+ input method modules for
+        virtual keyboards.
+        These scriptlets call <filename>gtk-update-icon-cache</filename> to add
+        the input method modules to the cache.
+        Since the cache files are architecture-specific,
+        <filename>gtk-update-icon-cache</filename> is run using QEMU if the
+        postinst scriptlets need to be run on the build host during image
+        creation.
+    </para>
+
+    <para>
+        If the input method modules being installed are in packages other than
+        the main package, set
+        <link linkend='var-GTKIMMODULES_PACKAGES'><filename>GTKIMMODULES_PACKAGES</filename></link>
+        to include the packages containing the modules.
+    </para>
+</section>
+
+<section id='ref-classes-gzipnative'>
+    <title><filename>gzipnative.bbclass</filename></title>
+
+    <para>
+        The <filename>gzip</filename> native (<filename>gzipnative</filename>)
+        class enables the use of native versions of <filename>gzip</filename>
+        and <filename>pigz</filename> rather than the system versions.
+    </para>
+</section>
+
+<section id='ref-classes-icecc'>
+    <title><filename>icecc.bbclass</filename></title>
+
+    <para>
+        The Icecream distributed compile support (<filename>icecc</filename>)
+        class stages directories with symlinks from
+        <filename>gcc</filename> and <filename>g++</filename> to
+        <filename>icecc</filename>, for both native and cross compilers.
+        Depending on each configure or compile, the OpenEmbedded build system
+        adds the directories at the head of the <filename>PATH</filename> list
+        and then sets
+        <link linkend='var-ICECC_CXX'><filename>ICECC_CXX</filename></link>
+        and
+        <link linkend='var-ICECC_CC'><filename>ICEC_CC</filename></link>.
+    </para>
+
+    <para>
+        For the cross compiler, the class creates a <filename>tar.gz</filename>
+        file that contains the Yocto Project toolchain and sets
+        <link linkend='var-ICECC_VERSION'><filename>ICECC_VERSION</filename></link>
+        accordingly.
+    </para>
+
+    <para>
+        The class handles all three different compile stages
+        (i.e native ,cross-kernel and target) and creates the necessary
+        environment <filename>tar.gz</filename> file to be used by the remote
+        machines.
+        The class also supports SDK generation.
+    </para>
+
+    <para>
+        If <link linkend='var-ICECC_PATH'><filename>ICECC_PATH</filename></link>
+        is not set in your <filename>local.conf</filename> file, then the
+        class tries to locate it using <filename>which</filename>.
+
+        If
+        <link linkend='var-ICECC_ENV_EXEC'><filename>ICECC_ENV_EXEC</filename></link>
+        is set in your <filename>local.conf</filename> file, the variable should
+        point to the <filename>icecc-create-env</filename> script provided by
+        the user.
+        If you do not point to a user-provided script, the build system
+        uses the default script provided by the recipe
+        <filename>icecc-create-env.bb</filename>.
+        <note>
+            This script is a modified version and not the one that comes with
+            <filename>icecc</filename>.
+        </note>
+    </para>
+
+    <para>
+        If you do not want the Icecream distributed compile support to apply
+        to specific packages or classes, you can effectively "blacklist" them
+        by listing the packages and classes using the
+        <link linkend='var-ICECC_USER_PACKAGE_BL'><filename>ICECC_USER_PACKAGE_BL</filename></link>
+        and
+        <link linkend='var-ICECC_USER_CLASS_BL'><filename>ICECC_USER_CLASS_BL</filename></link>,
+        variables, respectively, in your <filename>local.conf</filename> file.
+        Doing so causes the OpenEmbedded build system to handle these
+        compilations locally.
+    </para>
+
+    <para>
+        Additionally, you can list packages using the
+        <link linkend='var-ICECC_USER_PACKAGE_WL'><filename>ICECC_USER_PACKAGE_WL</filename></link>
+        variable in your <filename>local.conf</filename> file to force
+        <filename>icecc</filename> to be enabled for packages using an empty
+        <link linkend='var-PARALLEL_MAKE'><filename>PARALLEL_MAKE</filename></link>
+        variable.
+    </para>
+</section>
+
+<section id='ref-classes-image-live'>
+    <title><filename>image-live.bbclass</filename></title>
+
+    <para>
+        The live image (<filename>image-live</filename>) class
+        supports building "live" images.
+        Normally, you do not use this class directly.
+        Instead, you add "live" to
+        <link linkend='var-IMAGE_FSTYPES'><filename>IMAGE_FSTYPES</filename></link>.
+    </para>
+</section>
+
+<section id='ref-classes-image-vmdk'>
+    <title><filename>image-vmdk.bbclass</filename></title>
+
+    <para>
+        The Virtual Machine Disk image (<filename>image-vmdk</filename>) class
+        supports building VMware VMDK images.
+        Normally, you do not use this class directly.
+        Instead, you add "vmdk" to
+        <link linkend='var-IMAGE_FSTYPES'><filename>IMAGE_FSTYPES</filename></link>.
+    </para>
+</section>
+
+<section id='ref-classes-image-mklibs'>
+    <title><filename>image-mklibs.bbclass</filename></title>
+
+    <para>
+        The make libraries (<filename>mklibs</filename>) class
+        enables the use of the <filename>mklibs</filename> utility during the
+        <filename>do_rootfs</filename> task, which optimizes the size of
+        libraries contained in the image.
+    </para>
+
+    <para>
+        The
+        <link linkend='var-USER_CLASSES'><filename>USER_CLASSES</filename></link>
+        variable enables this class.
+        By default, the class is enabled in the
+        <filename>local.conf.template</filename> in the
+        <ulink url='&YOCTO_DOCS_DEV_URL;#source-directory'>Source Directory</ulink>
+        as follows:
+        <literallayout class='monospaced'>
+     USER_CLASSES ?= "buildstats image-mklibs image-prelink"
+        </literallayout>
+    </para>
+</section>
+
+<section id='ref-classes-image-prelink'>
+    <title><filename>image-prelink.bbclass</filename></title>
+
+    <para>
+        The image prelink (<filename>image-prelink</filename>) class
+        enables the use of the <filename>prelink</filename> utility during
+        the <filename>do_rootfs</filename> task, which optimizes the dynamic
+        linking of shared libraries to reduce executable startup time.
+    </para>
+
+    <para>
+        The
+        <link linkend='var-USER_CLASSES'><filename>USER_CLASSES</filename></link>
+        variable enables this class.
+        By default, the class is enabled in the
+        <filename>local.conf.template</filename> in the
+        <ulink url='&YOCTO_DOCS_DEV_URL;#source-directory'>Source Directory</ulink>
+        as follows:
+        <literallayout class='monospaced'>
+     USER_CLASSES ?= "buildstats image-mklibs image-prelink"
+        </literallayout>
+    </para>
+</section>
+
+<section id='ref-classes-image-swab'>
+    <title><filename>image-swab.bbclass</filename></title>
+
+    <para>
+        The image Swabber (<filename>image-swab</filename>) class
+        enables the
+        <ulink url='&YOCTO_HOME_URL;/tools-resources/projects/swabber'>Swabber</ulink>
+        tool in order to detect and log accesses to the host system during
+        the OpenEmbedded build process.
+        <note>
+            This class is currently unmaintained.
+        </note>
+    </para>
+</section>
+
+<section id='ref-classes-image_types'>
+    <title><filename>image_types.bbclass</filename></title>
+
+    <para>
+        The image types (<filename>image_types</filename>) class defines all of
+        the standard image output types that you can enable through the
+        <link linkend='var-IMAGE_FSTYPES'><filename>IMAGE_FSTYPES</filename></link>
+        variable.
+        You can use this class as a reference on how to add support for custom
+        image output types.
+    </para>
+
+    <para>
+        By default, this class is enabled through the
+        <link linkend='var-IMAGE_CLASSES'><filename>IMAGE_CLASSES</filename></link>
+        variable in
+        <link linkend='ref-classes-image'><filename>image.bbclass</filename></link>.
+        If you define your own image types using a custom BitBake class and
+        then use <filename>IMAGE_CLASSES</filename> to enable it, the custom
+        class must either inherit <filename>image_types</filename> or
+        <filename>image_types</filename> must also appear in
+        <filename>IMAGE_CLASSES</filename>.
+    </para>
+</section>
+
+<section id='ref-classes-image_types_uboot'>
+    <title><filename>image_types_uboot.bbclass</filename></title>
+
+    <para>
+        The U-Boot image types (<filename>image_types_uboot</filename>) class
+        defines additional image types specifically for the U-Boot bootloader.
+    </para>
+</section>
+
+<section id='ref-classes-insserve'>
+    <title><filename>insserve.bbclass</filename></title>
+
+    <para>
+        The insserve (<filename>insserve</filename>) class
+        uses the <filename>insserv</filename> utility to update the order of
+        symbolic links in <filename>/etc/rc?.d/</filename> within an image
+        based on dependencies specified by LSB headers in the
+        <filename>init.d</filename> scripts themselves.
+    </para>
+</section>
+
+<section id='ref-classes-kernel-arch'>
+    <title><filename>kernel-arch.bbclass</filename></title>
+
+    <para>
+        The kernel architecture (<filename>kernel-arch</filename>) class
+        sets the <filename>ARCH</filename> environment variable for Linux
+        kernel compilation (including modules).
+    </para>
+</section>
+
+<section id='ref-classes-kernel-module-split'>
+    <title><filename>kernel-module-split.bbclass</filename></title>
+
+    <para>
+        The kernel module split (<filename>kernel-module-split</filename>) class
+        provides common functionality for splitting Linux kernel modules into
+        separate packages.
+    </para>
+</section>
+
+<section id='ref-classes-kernel-yocto'>
+    <title><filename>kernel-yocto.bbclass</filename></title>
+
+    <para>
+        The Yocto Project kernel (<filename>kernel-yocto</filename>) class
+        provides common functionality for building from linux-yocto style
+        kernel source repositories.
+    </para>
+</section>
+
+<section id='ref-classes-lib_package'>
+    <title><filename>lib_package.bbclass</filename></title>
+
+    <para>
+        The library package (<filename>lib_package</filename>) class
+        supports recipes that build libraries and produce executable
+        binaries, where those binaries should not be installed by default
+        along with the library.
+        Instead, the binaries are added to a separate
+        <filename>${</filename><link linkend='var-PN'><filename>PN</filename></link><filename>}-bin</filename>
+        package to make their installation optional.
+    </para>
+</section>
+
+<section id='ref-classes-linux-kernel-base'>
+    <title><filename>linux-kernel-base.bbclass</filename></title>
+
+    <para>
+        The Linux kernel base (<filename>linux-kernel-base</filename>) class
+        provides common functionality for recipes that build out of the Linux
+        kernel source tree.
+        These builds goes beyond the kernel itself.
+        For example, the Perf recipe also inherits this class.
+    </para>
+</section>
+
+<section id='ref-classes-license'>
+    <title><filename>license.bbclass</filename></title>
+
+    <para>
+        The license (<filename>license</filename>) class provides license
+        manifest creation and license exclusion.
+        This class is enabled by default using the default value for the
+        <link linkend='var-INHERIT_DISTRO'><filename>INHERIT_DISTRO</filename></link>
+        variable.
+    </para>
+</section>
+
+<section id='ref-classes-logging'>
+    <title><filename>logging.bbclass</filename></title>
+
+    <para>
+        The logging (<filename>logging</filename>) class provides the standard
+        shell functions used to log messages for various BitBake severity levels
+        (i.e. <filename>bbplain</filename>, <filename>bbnote</filename>,
+        <filename>bbwarn</filename>, <filename>bberror</filename>,
+        <filename>bbfatal</filename>, and <filename>bbdebug</filename>.
+    </para>
+
+    <para>
+        This class is enabled by default since it is inherited by
+        the <filename>base</filename> class.
+    </para>
+</section>
+
+<section id='ref-classes-meta'>
+    <title><filename>meta.bbclass</filename></title>
+
+    <para>
+        The Metadata (<filename>meta</filename>) class is inherited by recipes
+        that do not build any output packages themselves, but act as a "meta"
+        target for building other recipes.
+    </para>
+</section>
+
+<section id='ref-classes-metadata_scm'>
+    <title><filename>metadata_scm.bbclass</filename></title>
+
+    <para>
+        The Metadata Source Code Management (SCM) System
+        (<filename>metadata_scm</filename>) class provides functionality for
+        querying the branch and revision of an SCM repository.
+    </para>
+
+    <para>
+        The <link linkend='ref-classes-base'><filename>base</filename></link>
+        class uses this class to print the revisions of each layer before
+        starting every build.
+        The <filename>metadata_scm</filename> class is enabled by default
+        because it is inherited by the <filename>base</filename> class.
+    </para>
+</section>
+
+<section id='ref-classes-mime'>
+    <title><filename>mime.bbclass</filename></title>
+
+    <para>
+        The Multipurpose Internet Mail Extension (MIME)
+        (<filename>mime</filename>) class generates the proper
+        post-install and post-remove (postinst/postrm) scriptlets for packages
+        that install MIME type files.
+        These scriptlets call <filename>update-mime-database</filename> to add
+        the MIME types to the shared database.
+    </para>
+</section>
+
+<section id='ref-classes-mirrors'>
+    <title><filename>mirrors.bbclass</filename></title>
+
+    <para>
+        The mirrors (<filename>mirrors</filename>) class sets up some standard
+        <link linkend='var-MIRRORS'><filename>MIRRORS</filename></link> entries
+        for source code mirrors.
+        These mirrors provide a fall-back path in case the upstream source
+        specified in
+        <link linkend='var-SRC_URI'><filename>SRC_URI</filename></link>
+        within recipes is unavailable.
+    </para>
+
+    <para>
+        This class is enabled by default since it is inherited by the
+        <link linkend='ref-classes-base'><filename>base</filename></link> class.
+    </para>
+</section>
+
+<section id='ref-classes-multilib*'>
+    <title><filename>multilib*.bbclass</filename></title>
+
+    <para>
+        The Multilib (<filename>multilib*</filename>) classes provide support
+        for building libraries with different target optimizations or target
+        architectures and installing them side-by-side in the same image.
+    </para>
+
+    <para>
+        For more information on using the Multilib feature, see the
+        "<ulink url='&YOCTO_DOCS_DEV_URL;#combining-multiple-versions-library-files-into-one-image'>Combining Multiple Versions of Library Files into One Image</ulink>"
+        section in the Yocto Project Development Manual.
     </para>
 </section>
 
@@ -994,8 +1947,6 @@
 
 <!-- Undocumented classes are:
         allarch.bbclass
-        archive*.bbclass
-        binconfig.bbclass
         bin_package.bbclass
         blacklist.bbclass
         bootimg.bbclass

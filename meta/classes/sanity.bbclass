@@ -175,7 +175,8 @@ def check_conf_exists(fn, data):
     return False
 
 def check_create_long_filename(filepath, pathname):
-    testfile = os.path.join(filepath, ''.join([`num`[-1] for num in xrange(1,200)]))
+    import string, random
+    testfile = os.path.join(filepath, ''.join(random.choice(string.ascii_letters) for x in range(200)))
     try:
         if not os.path.exists(filepath):
             bb.utils.mkdirhier(filepath)
@@ -183,8 +184,9 @@ def check_create_long_filename(filepath, pathname):
         f.close()
         os.remove(testfile)
     except IOError as e:
-        errno, strerror = e.args
-        if errno == 36: # ENAMETOOLONG
+        import errno
+        err, strerror = e.args
+        if err == errno.ENAMETOOLONG:
             return "Failed to create a file with a long name in %s. Please use a filesystem that does not unreasonably limit filename length.\n" % pathname
         else:
             return "Failed to create a file in %s: %s.\n" % (pathname, strerror)
@@ -599,7 +601,7 @@ def check_sanity_everybuild(status, d):
     # Check that the DISTRO is valid, if set
     # need to take into account DISTRO renaming DISTRO
     distro = d.getVar('DISTRO', True)
-    if distro:
+    if distro and distro != "nodistro":
         if not ( check_conf_exists("conf/distro/${DISTRO}.conf", d) or check_conf_exists("conf/distro/include/${DISTRO}.inc", d) ):
             status.addresult("DISTRO '%s' not found. Please set a valid DISTRO in your local.conf\n" % d.getVar("DISTRO", True))
 
@@ -624,6 +626,11 @@ def check_sanity_everybuild(status, d):
         machinevalid = False
     if machinevalid:
         status.addresult(check_toolchain(d))
+
+    # Check that the SDKMACHINE is valid, if it is set
+    if d.getVar('SDKMACHINE', True):
+        if not check_conf_exists("conf/machine-sdk/${SDKMACHINE}.conf", d):
+            status.addresult('Specified SDKMACHINE value is not valid\n')
 
     check_supported_distro(d)
 

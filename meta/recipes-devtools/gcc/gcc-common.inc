@@ -19,7 +19,7 @@ def get_gcc_fpu_setting(bb, d):
 get_gcc_fpu_setting[vardepvalue] = "${@get_gcc_fpu_setting(bb, d)}"
 
 def get_gcc_mips_plt_setting(bb, d):
-    if d.getVar('TRANSLATED_TARGET_ARCH', True) in [ 'mips', 'mipsel' ] and 'mplt' in d.getVar('DISTRO_FEATURES',1).split() :
+    if d.getVar('TRANSLATED_TARGET_ARCH', True) in [ 'mips', 'mipsel' ] and oe.utils.contains('DISTRO_FEATURES', 'mplt', True, False, d):
         return "--with-mips-plt"
     return ""
 
@@ -28,10 +28,11 @@ def get_gcc_multiarch_setting(bb, d):
     multiarch_options = {
         "i586":    "--enable-targets=all",
         "powerpc": "--enable-targets=powerpc64",
+        "mips":    "--enable-targets=all",
         "sparc":   "--enable-targets=all",
     }
 
-    if 'multiarch' in d.getVar('DISTRO_FEATURES', True).split() :
+    if oe.utils.contains('DISTRO_FEATURES', 'multiarch', True, False, d):
         if target_arch in multiarch_options :
             return multiarch_options[target_arch]
     return ""
@@ -89,6 +90,7 @@ do_patch[stamp-base] = "${SS}"
 SSCLEAN = "${TMPDIR}/stamps/work-shared/gcc-[0-9]*-*"
 do_fetch[stamp-base-clean] = "${SSCLEAN}"
 do_unpack[stamp-base-clean] = "${SSCLEAN}"
+do_unpack[umask] = "022"
 do_patch[stamp-base-clean] = "${SSCLEAN}"
 
 # SW means Shared Work directory

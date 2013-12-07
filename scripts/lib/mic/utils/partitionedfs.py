@@ -45,11 +45,7 @@ class PartitionedMount(Mount):
         self.mountOrder = []
         self.unmountOrder = []
         self.parted = find_binary_path("parted")
-        self.kpartx = find_binary_path("kpartx")
-        self.mkswap = find_binary_path("mkswap")
         self.btrfscmd=None
-        self.mountcmd = find_binary_path("mount")
-        self.umountcmd = find_binary_path("umount")
         self.skipformat = skipformat
         self.snapshot_created = self.skipformat
         # Size of a sector used in calculations
@@ -351,6 +347,16 @@ class PartitionedMount(Mount):
                             (flag_name, p['num'], d['disk'].device))
                 self.__run_parted(["-s", d['disk'].device, "set",
                                    "%d" % p['num'], flag_name, "on"])
+
+            # Parted defaults to enabling the lba flag for fat16 partitions,
+            # which causes compatibility issues with some firmware (and really
+            # isn't necessary).
+            if parted_fs_type == "fat16":
+                if d['ptable_format'] == 'msdos':
+                    msger.debug("Disable 'lba' flag for partition '%s' on disk '%s'" % \
+                                (p['num'], d['disk'].device))
+                    self.__run_parted(["-s", d['disk'].device, "set",
+                                       "%d" % p['num'], "lba", "off"])
 
         # If the partition table format is "gpt", find out PARTUUIDs for all
         # the partitions. And if users specified custom parition type UUIDs,

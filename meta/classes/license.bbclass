@@ -62,19 +62,19 @@ license_create_manifest() {
 	# - Just copy the manifest
 	# - Copy the manifest and the license directories
 	# With both options set we see a .5 M increase in core-image-minimal
-	if [ -n "${COPY_LIC_MANIFEST}" ]; then
+	if [ "${COPY_LIC_MANIFEST}" = "1" ]; then
 		mkdir -p ${IMAGE_ROOTFS}/usr/share/common-licenses/
 		cp ${LICENSE_MANIFEST} ${IMAGE_ROOTFS}/usr/share/common-licenses/license.manifest
-		if [ -n "${COPY_LIC_DIRS}" ]; then
+		if [ "${COPY_LIC_DIRS}" = "1" ]; then
 			for pkg in ${INSTALLED_PKGS}; do
 				mkdir -p ${IMAGE_ROOTFS}/usr/share/common-licenses/${pkg}
 				for lic in `ls ${LICENSE_DIRECTORY}/${pkg}`; do
 					# Really don't need to copy the generics as they're 
 					# represented in the manifest and in the actual pkg licenses
 					# Doing so would make your image quite a bit larger
-					if [[ "${lic}" != "generic_"* ]]; then
+					if [ "${lic#generic_}" = "${lic}" ]; then
 						cp ${LICENSE_DIRECTORY}/${pkg}/${lic} ${IMAGE_ROOTFS}/usr/share/common-licenses/${pkg}/${lic}
-					elif [[ "${lic}" == "generic_"* ]]; then
+					else
 						if [ ! -f ${IMAGE_ROOTFS}/usr/share/common-licenses/${lic} ]; then
 							cp ${LICENSE_DIRECTORY}/${pkg}/${lic} ${IMAGE_ROOTFS}/usr/share/common-licenses/
 						fi
@@ -228,7 +228,10 @@ def find_license_files(d):
         return lic_files_paths
 
     for url in lic_files.split():
-        (type, host, path, user, pswd, parm) = bb.fetch.decodeurl(url)
+        try:
+            (type, host, path, user, pswd, parm) = bb.fetch.decodeurl(url)
+        except bb.fetch.MalformedUrl:
+            raise bb.build.FuncFailed("%s: LIC_FILES_CHKSUM contains an invalid URL:  %s" % (d.getVar('PF', True), url))
         # We want the license filename and path
         srclicfile = os.path.join(srcdir, path)
         lic_files_paths.append((os.path.basename(path), srclicfile))
@@ -287,11 +290,11 @@ def incompatible_license(d, dont_want_licenses, package=None):
 
 def check_license_flags(d):
     """
-    This function checks if a recipe has any LICENSE_FLAGs that
+    This function checks if a recipe has any LICENSE_FLAGS that
     aren't whitelisted.
 
-    If it does, it returns the first LICENSE_FLAG missing from the
-    whitelist, or all the LICENSE_FLAGs if there is no whitelist.
+    If it does, it returns the first LICENSE_FLAGS item missing from the
+    whitelist, or all of the LICENSE_FLAGS if there is no whitelist.
 
     If everything is is properly whitelisted, it returns None.
     """

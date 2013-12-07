@@ -20,7 +20,7 @@ import glob
 import shutil
 
 from mic import kickstart, msger
-from mic.utils import fs_related, rpmmisc, runner, misc
+from mic.utils import fs_related, runner, misc
 from mic.utils.errors import CreatorError
 from mic.imager.loop import LoopImageCreator
 
@@ -741,7 +741,7 @@ hiddenmenu
         self._configure_syslinux_bootloader(isodir)
         self._configure_efi_bootloader(isodir)
 
-arch = rpmmisc.getBaseArch()
+arch = "i386"
 if arch in ("i386", "x86_64"):
     LiveCDImageCreator = x86LiveImageCreator
 elif arch.startswith("arm"):

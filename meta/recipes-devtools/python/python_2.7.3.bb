@@ -32,6 +32,7 @@ SRC_URI += "\
   file://run-ptest \
   file://CVE-2013-4073_py27.patch \
   file://pypirc-secure.patch \
+  file://parallel-makeinst-create-bindir.patch \
 "
 
 S = "${WORKDIR}/Python-${PV}"
@@ -61,7 +62,7 @@ do_compile() {
         cd -
 
 	# remove hardcoded ccache, see http://bugs.openembedded.net/show_bug.cgi?id=4144
-	sed -i -e s,ccache,'$(CCACHE)', Makefile
+	sed -i -e s,ccache\ ,'$(CCACHE) ', Makefile
 
 	# remove any bogus LD_LIBRARY_PATH
 	sed -i -e s,RUNSHARED=.*,RUNSHARED=, Makefile
@@ -134,11 +135,6 @@ do_install_append_class-nativesdk () {
 	create_wrapper ${D}${bindir}/python2.7 TERMINFO_DIRS='${sysconfdir}/terminfo:/etc/terminfo:/usr/share/terminfo:/usr/share/misc/terminfo:/lib/terminfo'
 }
 
-do_install_ptest() {
-	cp ${B}/Makefile ${D}${PTEST_PATH}
-	sed -i s:LIBDIR:${libdir}:g ${D}${PTEST_PATH}/run-ptest
-}
-
 SSTATE_SCAN_FILES += "Makefile"
 PACKAGE_PREPROCESS_FUNCS += "py_package_preprocess"
 
@@ -171,6 +167,14 @@ FILES_${PN}-misc = "${libdir}/python${PYTHON_MAJMIN}"
 RDEPENDS_${PN}-ptest = "${PN}-modules ${PN}-misc"
 #inherit ptest after "require python-${PYTHON_MAJMIN}-manifest.inc" so PACKAGES doesn't get overwritten
 inherit ptest
+
+# This must come after inherit ptest for the override to take effect
+do_install_ptest() {
+	cp ${B}/Makefile ${D}${PTEST_PATH}
+	sed -e s:LIBDIR/python/ptest:${PTEST_PATH}:g \
+	 -e s:LIBDIR:${libdir}:g \
+	 -i ${D}${PTEST_PATH}/run-ptest
+}
 
 # catch manpage
 PACKAGES += "${PN}-man"

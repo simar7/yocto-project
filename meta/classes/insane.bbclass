@@ -558,8 +558,9 @@ def package_qa_check_xorg_driver_abi(path, name, d, elf, messages):
 
     driverdir = d.expand("${libdir}/xorg/modules/drivers/")
     if driverdir in path and path.endswith(".so"):
+        mlprefix = d.getVar('MLPREFIX', True) or ''
         for rdep in bb.utils.explode_deps(d.getVar('RDEPENDS_' + name, True) or ""):
-            if rdep.startswith("xorg-abi-"):
+            if rdep.startswith("%sxorg-abi-" % mlprefix):
                 return
         messages.append("Package %s contains Xorg driver (%s) but no xorg-abi- dependencies" % (name, os.path.basename(path)))
 
@@ -594,12 +595,16 @@ def package_qa_check_license(workdir, d):
     srcdir = d.getVar('S', True)
 
     for url in lic_files.split():
-        (type, host, path, user, pswd, parm) = bb.fetch.decodeurl(url)
+        try:
+            (type, host, path, user, pswd, parm) = bb.fetch.decodeurl(url)
+        except bb.fetch.MalformedUrl:
+            raise bb.build.FuncFailed( pn + ": LIC_FILES_CHKSUM contains an invalid URL: " + url)
         srclicfile = os.path.join(srcdir, path)
         if not os.path.isfile(srclicfile):
             raise bb.build.FuncFailed( pn + ": LIC_FILES_CHKSUM points to an invalid file: " + srclicfile)
 
-        if 'md5' not in parm:
+        recipemd5 = parm.get('md5', '')
+        if not recipemd5:
             bb.error(pn + ": md5 checksum is not specified for ", url)
             return False
         beginline, endline = 0, 0
@@ -630,12 +635,21 @@ def package_qa_check_license(workdir, d):
             md5chksum = bb.utils.md5_file(tmplicfile)
             os.unlink(tmplicfile)
 
-        if parm['md5'] == md5chksum:
+        if recipemd5 == md5chksum:
             bb.note (pn + ": md5 checksum matched for ", url)
         else:
             bb.error (pn + ": md5 data is not matching for ", url)
             bb.error (pn + ": The new md5 checksum is ", md5chksum)
-            bb.error (pn + ": Check if the license information has changed in")
+            if beginline:
+                if endline:
+                    srcfiledesc = "%s (lines %d through to %d)" % (srclicfile, beginline, endline)
+                else:
+                    srcfiledesc = "%s (beginning on line %d)" % (srclicfile, beginline)
+            elif endline:
+                srcfiledesc = "%s (ending on line %d)" % (srclicfile, endline)
+            else:
+                srcfiledesc = srclicfile
+            bb.error(pn + ": Check if the license information has changed in %s to verify that the LICENSE value \"%s\" remains valid" % (srcfiledesc, lic))
             sane = False
 
     return sane

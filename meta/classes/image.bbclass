@@ -90,20 +90,22 @@ do_rootfs[depends] += "makedevs-native:do_populate_sysroot virtual/fakeroot-nati
 do_rootfs[depends] += "virtual/update-alternatives-native:do_populate_sysroot update-rc.d-native:do_populate_sysroot"
 do_rootfs[recrdeptask] += "do_packagedata"
 
+do_build[depends] += "virtual/kernel:do_deploy"
+
 def build_live(d):
     if base_contains("IMAGE_FSTYPES", "live", "live", "0", d) == "0": # live is not set but hob might set iso or hddimg
         d.setVar('NOISO', base_contains('IMAGE_FSTYPES', "iso", "0", "1", d))
         d.setVar('NOHDD', base_contains('IMAGE_FSTYPES', "hddimg", "0", "1", d))
         if d.getVar('NOISO', True) == "0" or d.getVar('NOHDD', True) == "0":
-            return "live"
-        return "empty"
-    return "live"
+            return "image-live"
+        return ""
+    return "image-live"
 
 IMAGE_TYPE_live = "${@build_live(d)}"
 
-inherit image-${IMAGE_TYPE_live}
-IMAGE_TYPE_vmdk = '${@base_contains("IMAGE_FSTYPES", "vmdk", "vmdk", "empty", d)}'
-inherit image-${IMAGE_TYPE_vmdk}
+inherit ${IMAGE_TYPE_live}
+IMAGE_TYPE_vmdk = '${@base_contains("IMAGE_FSTYPES", "vmdk", "image-vmdk", "", d)}'
+inherit ${IMAGE_TYPE_vmdk}
 
 python () {
     deps = " " + imagetypes_getdepends(d)
@@ -179,6 +181,9 @@ ROOTFS_POSTPROCESS_COMMAND_prepend = "run_intercept_scriptlets; "
 ROOTFS_POSTPROCESS_COMMAND += '${@base_contains("IMAGE_FEATURES", "debug-tweaks", "ssh_allow_empty_password; ", "",d)}'
 # Enable postinst logging if debug-tweaks is enabled
 ROOTFS_POSTPROCESS_COMMAND += '${@base_contains("IMAGE_FEATURES", "debug-tweaks", "postinst_enable_logging; ", "",d)}'
+# Write manifest
+IMAGE_MANIFEST = "${DEPLOY_DIR_IMAGE}/${IMAGE_NAME}.rootfs.manifest"
+ROOTFS_POSTPROCESS_COMMAND =+ "write_image_manifest ; "
 # Set default postinst log file
 POSTINST_LOGFILE ?= "${localstatedir}/log/postinstall.log"
 
@@ -381,6 +386,11 @@ fakeroot do_rootfs () {
 	${IMAGE_POSTPROCESS_COMMAND}
 	
 	${MACHINE_POSTPROCESS_COMMAND}
+
+	if [ -n "${IMAGE_LINK_NAME}" -a -f "${IMAGE_MANIFEST}" ]; then
+		rm -f ${DEPLOY_DIR_IMAGE}/${IMAGE_LINK_NAME}.manifest
+		ln -s ${IMAGE_NAME}.rootfs.manifest ${DEPLOY_DIR_IMAGE}/${IMAGE_LINK_NAME}.manifest
+	fi
 }
 
 insert_feed_uris () {
@@ -602,12 +612,7 @@ make_zimage_symlink_relative () {
 }
 
 write_image_manifest () {
-	rootfs_${IMAGE_PKGTYPE}_write_manifest
-
-	if [ -n "${IMAGE_LINK_NAME}" ]; then
-		rm -f ${DEPLOY_DIR_IMAGE}/${IMAGE_LINK_NAME}.manifest
-		ln -s ${IMAGE_NAME}.rootfs.manifest ${DEPLOY_DIR_IMAGE}/${IMAGE_LINK_NAME}.manifest
-	fi
+	list_installed_packages ver | sort > ${IMAGE_MANIFEST}
 }
 
 # Make login manager(s) enable automatic login.

@@ -27,6 +27,7 @@ import os
 import sys
 import logging
 import bb
+import re
 from   bb import data
 from   bb.fetch2 import FetchMethod
 from   bb.fetch2 import FetchError
@@ -36,7 +37,7 @@ from   bb.fetch2 import logger
 
 class Svn(FetchMethod):
     """Class to fetch a module or modules from svn repositories"""
-    def supports(self, url, ud, d):
+    def supports(self, ud, d):
         """
         Check to see if a given url can be fetched with svn.
         """
@@ -91,6 +92,8 @@ class Svn(FetchMethod):
 
         if command == "info":
             svncmd = "%s info %s %s://%s/%s/" % (ud.basecmd, " ".join(options), proto, svnroot, ud.module)
+        elif command == "log1":
+            svncmd = "%s log --limit 1 %s %s://%s/%s/" % (ud.basecmd, " ".join(options), proto, svnroot, ud.module)
         else:
             suffix = ""
             if ud.revision:
@@ -109,14 +112,14 @@ class Svn(FetchMethod):
 
         return svncmd
 
-    def download(self, loc, ud, d):
+    def download(self, ud, d):
         """Fetch url"""
 
         logger.debug(2, "Fetch: checking for module directory '" + ud.moddir + "'")
 
         if os.access(os.path.join(ud.moddir, '.svn'), os.R_OK):
             svnupdatecmd = self._buildsvncommand(ud, d, "update")
-            logger.info("Update " + loc)
+            logger.info("Update " + ud.url)
             # update sources there
             os.chdir(ud.moddir)
             # We need to attempt to run svn upgrade first in case its an older working format
@@ -129,7 +132,7 @@ class Svn(FetchMethod):
             runfetchcmd(svnupdatecmd, d)
         else:
             svnfetchcmd = self._buildsvncommand(ud, d, "fetch")
-            logger.info("Fetch " + loc)
+            logger.info("Fetch " + ud.url)
             # check out sources there
             bb.utils.mkdirhier(ud.pkgdir)
             os.chdir(ud.pkgdir)
@@ -157,33 +160,32 @@ class Svn(FetchMethod):
     def supports_srcrev(self):
         return True
 
-    def _revision_key(self, url, ud, d, name):
+    def _revision_key(self, ud, d, name):
         """
         Return a unique key for the url
         """
         return "svn:" + ud.moddir
 
-    def _latest_revision(self, url, ud, d, name):
+    def _latest_revision(self, ud, d, name):
         """
         Return the latest upstream revision number
         """
-        bb.fetch2.check_network_access(d, self._buildsvncommand(ud, d, "info"))
+        bb.fetch2.check_network_access(d, self._buildsvncommand(ud, d, "log1"))
 
-        output = runfetchcmd("LANG=C LC_ALL=C " + self._buildsvncommand(ud, d, "info"), d, True)
+        output = runfetchcmd("LANG=C LC_ALL=C " + self._buildsvncommand(ud, d, "log1"), d, True)
 
-        revision = None
-        for line in output.splitlines():
-            if "Last Changed Rev" in line:
-                revision = line.split(":")[1].strip()
+        # skip the first line, as per output of svn log
+        # then we expect the revision on the 2nd line
+        revision = re.search('^r([0-9]*)', output.splitlines()[1]).group(1)
 
         return revision
 
-    def sortable_revision(self, url, ud, d, name):
+    def sortable_revision(self, ud, d, name):
         """
         Return a sortable revision number which in our case is the revision number
         """
 
-        return False, self._build_revision(url, ud, d)
+        return False, self._build_revision(ud, d)
 
-    def _build_revision(self, url, ud, d):
+    def _build_revision(self, ud, d):
         return ud.revision

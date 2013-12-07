@@ -31,11 +31,13 @@
 
 __version__ = "0.1.0"
 
+# Python Standard Library modules
 import os
 import sys
 import optparse
 import logging
 
+# External modules
 scripts_path = os.path.abspath(os.path.dirname(os.path.abspath(sys.argv[0])))
 lib_path = scripts_path + '/lib'
 sys.path = sys.path + [lib_path]
@@ -75,6 +77,14 @@ def wic_create_subcommand(args, usage_str):
         parser.print_help()
         sys.exit(1)
 
+    if not options.image_name and not (options.rootfs_dir and
+                                       options.bootimg_dir and
+                                       options.kernel_dir and
+                                       options.native_sysroot):
+        print "Build artifacts not completely specified, exiting."
+        print "  (Use 'wic -e' or 'wic -r -b -k -n' to specify artifacts)"
+        sys.exit(1)
+
     if not options.image_name:
         options.build_check = False
 
@@ -111,6 +121,38 @@ def wic_create_subcommand(args, usage_str):
         bootimg_dir = options.bootimg_dir
         kernel_dir = options.kernel_dir
         native_sysroot = options.native_sysroot
+        if not os.path.isdir(rootfs_dir):
+            print "--roofs-dir (-r) not found, exiting\n"
+            sys.exit(1)
+        if not os.path.isdir(bootimg_dir):
+            print "--bootimg-dir (-b) not found, exiting\n"
+            sys.exit(1)
+        if not os.path.isdir(kernel_dir):
+            print "--kernel-dir (-k) not found, exiting\n"
+            sys.exit(1)
+        if not os.path.isdir(native_sysroot):
+            print "--native-sysroot (-n) not found, exiting\n"
+            sys.exit(1)
+    else:
+        not_found = not_found_dir = ""
+        if not os.path.isdir(rootfs_dir):
+            (not_found, not_found_dir) = ("rootfs-dir", rootfs_dir)
+        elif not os.path.isdir(hdddir) and not os.path.isdir(staging_data_dir):
+            (not_found, not_found_dir) = ("bootimg-dir", bootimg_dir)
+        elif not os.path.isdir(kernel_dir):
+            (not_found, not_found_dir) = ("kernel-dir", kernel_dir)
+        elif not os.path.isdir(native_sysroot):
+            (not_found, not_found_dir) = ("native-sysroot", native_sysroot)
+        if not_found:
+            if not not_found_dir:
+                not_found_dir = "Completely missing artifact - wrong image (.wks) used?"
+            print "Build artifacts not found, exiting."
+            print "  (Please check that the build artifacts for the machine"
+            print "   selected in local.conf actually exist and that they"
+            print "   are the correct artifacts for the image (.wks file)).\n"
+            print "The artifact that couldn't be found was %s:\n  %s" % \
+                (not_found, not_found_dir)
+            sys.exit(1)
 
     wic_create(args, wks_file, rootfs_dir, bootimg_dir, kernel_dir,
                native_sysroot, hdddir, staging_data_dir, scripts_path,

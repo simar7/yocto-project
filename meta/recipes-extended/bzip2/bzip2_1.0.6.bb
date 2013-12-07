@@ -26,11 +26,10 @@ ALTERNATIVE_PRIORITY = "100"
 ALTERNATIVE_${PN} = "bunzip2 bzcat"
 
 #install binaries to bzip2-native under sysroot for replacement-native
-EXTRA_OECONF_class-native += "--bindir=${STAGING_BINDIR_NATIVE}/${PN}"
+EXTRA_OECONF_append_class-native = " --bindir=${STAGING_BINDIR_NATIVE}/${PN}"
 do_configure_prepend () {
 	cp ${WORKDIR}/configure.ac ${S}/
 	cp ${WORKDIR}/Makefile.am ${S}/
-	cp ${STAGING_DATADIR_NATIVE}/automake*/install-sh ${S}/
 }
 
 do_install_ptest () {

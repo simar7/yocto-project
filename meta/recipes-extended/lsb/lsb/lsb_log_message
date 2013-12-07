@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/sh
 
 . /etc/init.d/functions
 
@@ -19,6 +19,11 @@ case "$ACTION" in
   warning)
   	echo -n $*
 	warning "$*"
+	echo
+	;;
+  begin)
+  	echo -n $*
+	begin "$*"
 	echo
 	;;
   *)

@@ -42,10 +42,8 @@ xmlparse = cElementTree.parse
 from mic import msger
 from mic.utils.errors import CreatorError, SquashfsError
 from mic.utils.fs_related import find_binary_path, makedirs
-from mic.utils.grabber import myurlgrab
 from mic.utils.proxy import get_proxy_for
 from mic.utils import runner
-from mic.utils import rpmmisc
 
 
 RPM_RE  = re.compile("(.*)\.(.*) (.*)-(.*)")

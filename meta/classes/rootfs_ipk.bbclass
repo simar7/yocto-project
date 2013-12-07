@@ -89,8 +89,9 @@ fakeroot rootfs_ipk_do_rootfs () {
 	${ROOTFS_POSTPROCESS_COMMAND}
 
 	if ${@base_contains("IMAGE_FEATURES", "read-only-rootfs", "true", "false" ,d)}; then
-		if [ -n "$(delayed_postinsts)" ]; then
-			bberror "Some packages could not be configured offline and rootfs is read-only."
+	        delayed_postinsts="$(delayed_postinsts)"
+		if [ -n "$delayed_postinsts" ]; then
+			bberror "The following packages could not be configured offline and rootfs is read-only: $delayed_postinsts"
 			exit 1
 		fi
 	fi
@@ -115,20 +116,6 @@ save_postinsts () {
 		cp ${IMAGE_ROOTFS}${OPKGLIBDIR}/opkg/info/$p.postinst ${IMAGE_ROOTFS}${sysconfdir}/ipk-postinsts/$num-$p
 		num=`echo \$((num+1))`
 	done
-}
-
-rootfs_ipk_write_manifest() {
-	manifest=${DEPLOY_DIR_IMAGE}/${IMAGE_NAME}.rootfs.manifest
-	cp ${IMAGE_ROOTFS}${OPKGLIBDIR}/opkg/status $manifest
-
-	sed '/Depends/d' -i $manifest
-	sed '/Status/d' -i $manifest
-	sed '/Architecture/d' -i $manifest
-	sed '/Installed-Time/d' -i $manifest
-	sed '/Auto-Installed/d' -i $manifest
-	sed '/Recommends/d' -i $manifest
-	sed '/Provides/d' -i $manifest
-	sed '/Conflicts/d' -i $manifest
 }
 
 remove_packaging_data_files() {

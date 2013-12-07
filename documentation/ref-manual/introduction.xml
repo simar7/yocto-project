@@ -121,11 +121,6 @@
                 </para>
 
                 <para>
-                    Refer to
-                    <ulink url='&OE_HOME_URL;/index.php?title=OEandYourDistro'>OE and Your Distro</ulink> and
-                    <ulink url='&OE_HOME_URL;/index.php?title=Required_software'>Required Software</ulink>
-                    for information for information about dependencies and
-                    requirements.
                     If you encounter problems, please go to
                     <ulink url='&YOCTO_BUGZILLA_URL;'>Yocto Project Bugzilla</ulink>
                     and submit a bug.
@@ -251,11 +246,11 @@
         </section>
 
         <section id='opensuse-packages'>
-            <title>OpenSUSE Packages</title>
+            <title>openSUSE Packages</title>
 
             <para>
                 The following list shows the required packages by function
-                given a supported OpenSUSE Linux distribution:
+                given a supported openSUSE Linux distribution:
                 <itemizedlist>
                     <listitem><para><emphasis>Essentials:</emphasis>
                         Packages needed to build an image for a headless
@@ -346,8 +341,8 @@
             you can resolve this by either downloading a pre-built tarball
             containing these tools, or building such a tarball on another
             system.
-            Regardless of the method, once you have the tarball you simply
-            install it somewhere on you system, such as a directory in your
+            Regardless of the method, once you have the tarball, you simply
+            install it somewhere on your system, such as a directory in your
             home directory, and then source the environment script provided,
             which adds the tools into <filename>PATH</filename> and sets
             any other environment variables required to run the tools.
@@ -358,7 +353,7 @@
         <para>
             If downloading a pre-built tarball, locate the
             <filename>*.sh</filename> at
-            <ulink url='&YOCTO_DL_URL;/releases/yocto/yocto-1.5/buildtools/'></ulink>.
+            <ulink url='&YOCTO_DL_URL;/releases/yocto/yocto-&DISTRO;/buildtools/'></ulink>.
         </para>
 
         <para>
@@ -371,7 +366,7 @@
                 variable determines whether you build tools for a 32-bit
                 or 64-bit system.
             </note>
-            Once the build completes, you can find the file that installs the
+            Once the build completes, you can find the file that installs
             the tools in the <filename>tmp/deploy/sdk</filename> subdirectory
             of the
             <ulink url='&YOCTO_DOCS_DEV_URL;#build-directory'>Build Directory</ulink>.
@@ -409,16 +404,32 @@
         The Yocto Project development team makes the Yocto Project available through a number
         of methods:
         <itemizedlist>
-            <listitem><para><emphasis>Releases:</emphasis> Stable, tested releases are available through
+            <listitem><para><emphasis>Source Repositories:</emphasis>
+                Working from a copy of the upstream
+                <filename>poky</filename> repository is the
+                preferred method for obtaining and using a Yocto Project
+                release.
+                You can view the Yocto Project Source Repositories at
+                <ulink url='&YOCTO_GIT_URL;/cgit.cgi'></ulink>.
+                In particular, you can find the
+                <filename>poky</filename> repository at
+                <ulink url='http://git.yoctoproject.org/cgit/cgit.cgi/poky/'></ulink>.
+                </para></listitem>
+            <listitem><para><emphasis>Releases:</emphasis> Stable, tested
+                releases are available as tarballs through
                 <ulink url='&YOCTO_DL_URL;/releases/yocto/'/>.</para></listitem>
-            <listitem><para><emphasis>Nightly Builds:</emphasis> These releases are available at
+            <listitem><para><emphasis>Nightly Builds:</emphasis> These
+                tarball releases are available at
                 <ulink url='http://autobuilder.yoctoproject.org/nightly'/>.
-                These builds include Yocto Project releases, meta-toolchain tarball installation scripts, and
-                experimental builds.</para></listitem>
-            <listitem><para><emphasis>Yocto Project Website:</emphasis> You can find releases
-                of the Yocto Project and supported BSPs at the
+                These builds include Yocto Project releases, meta-toolchain
+                tarball installation scripts, and experimental builds.
+                </para></listitem>
+            <listitem><para><emphasis>Yocto Project Website:</emphasis> You can
+                find tarball releases of the Yocto Project and supported BSPs
+                at the
                 <ulink url='&YOCTO_HOME_URL;'>Yocto Project website</ulink>.
-                Along with these downloads, you can find lots of other information at this site.
+                Along with these downloads, you can find lots of other
+                information at this site.
                 </para></listitem>
         </itemizedlist>
     </para>
@@ -429,10 +440,9 @@
     <para>
         Development using the Yocto Project requires a local
         <ulink url='&YOCTO_DOCS_DEV_URL;#source-directory'>Source Directory</ulink>.
-        You can set up the Source Directory by downloading a Yocto Project release tarball and unpacking it,
-        or by cloning a copy of the upstream
-        <ulink url='&YOCTO_DOCS_DEV_URL;#poky'>Poky</ulink> Git repository.
-        For information on both these methods, see the
+        You can set up the Source Directory by cloning a copy of the upstream
+        <ulink url='&YOCTO_DOCS_DEV_URL;#poky'>poky</ulink> Git repository.
+        For information on how to do this, see the
         "<ulink url='&YOCTO_DOCS_DEV_URL;#getting-setup'>Getting Set Up</ulink>"
         section in the Yocto Project Development Manual.
     </para>

@@ -7,7 +7,6 @@ BUGTRACKER = "http://debbugs.gnu.org/coreutils"
 LICENSE = "GPLv3+"
 LIC_FILES_CHKSUM = "file://COPYING;md5=d32239bcb673463ab874e80d47fae504\
                     file://src/ls.c;beginline=5;endline=16;md5=38b79785ca88537b75871782a2a3c6b8"
-PR = "r0"
 DEPENDS = "gmp libcap"
 DEPENDS_class-native = ""
 
@@ -23,6 +22,7 @@ SRC_URI[md5sum] = "065ba41828644eca5dd8163446de5d64"
 SRC_URI[sha256sum] = "adaa44bdab3fa5eb352e80d8a31fdbf957b78653d0c2cd30d63e161444288e18"
 
 EXTRA_OECONF_class-native = "--without-gmp"
+EXTRA_OECONF_class-target = "--enable-install-program=arch"
 
 # acl is not a default feature
 #
@@ -34,7 +34,7 @@ PACKAGECONFIG_class-native ??= ""
 PACKAGECONFIG[acl] = "--enable-acl,--disable-acl,acl,"
 
 # [ df mktemp base64 gets a special treatment and is not included in this
-bindir_progs = "basename chcon cksum comm csplit cut dir dircolors dirname du \
+bindir_progs = "arch basename chcon cksum comm csplit cut dir dircolors dirname du \
                 env expand expr factor fmt fold groups head hostid id install \
                 join link logname md5sum mkfifo nice nl nohup nproc od paste pathchk \
                 pinky pr printenv printf ptx readlink realpath runcon seq sha1sum sha224sum sha256sum \

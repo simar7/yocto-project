@@ -88,6 +88,7 @@ class VariableParse:
 
         self.references = set()
         self.execs = set()
+        self.contains = {}
 
     def var_sub(self, match):
             key = match.group()[2:-1]
@@ -98,7 +99,7 @@ class VariableParse:
                 varparse = self.d.expand_cache[key]
                 var = varparse.value
             else:
-                var = self.d.getVar(key, True)
+                var = self.d.getVarFlag(key, "_content", True)
             self.references.add(key)
             if var is not None:
                 return var
@@ -120,6 +121,11 @@ class VariableParse:
             self.references |= parser.references
             self.execs |= parser.execs
 
+            for k in parser.contains:
+                if k not in self.contains:
+                    self.contains[k] = parser.contains[k]
+                else:
+                    self.contains[k].update(parser.contains[k])
             value = utils.better_eval(codeobj, DataContext(self.d))
             return str(value)
 

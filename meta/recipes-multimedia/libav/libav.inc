@@ -45,6 +45,7 @@ EXTRA_OECONF = " \
     \
     --enable-avserver \
     --enable-avplay \
+    --ld="${CCLD}" \
     --enable-libtheora  \
     --enable-libvorbis \
     --arch=${TARGET_ARCH} \
@@ -55,6 +56,8 @@ EXTRA_OECONF = " \
     --sysroot="${STAGING_DIR_TARGET}" \
     --enable-hardcoded-tables \
     ${EXTRA_FFCONF} \
+    --libdir=${libdir} \
+    --shlibdir=${libdir} \
 "
 
 do_configure() {

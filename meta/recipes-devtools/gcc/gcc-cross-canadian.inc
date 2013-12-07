@@ -29,6 +29,7 @@ export AS_FOR_TARGET = "${TARGET_PREFIX}as"
 export DLLTOOL_FOR_TARGET = "${TARGET_PREFIX}dlltool"
 export CC_FOR_TARGET = "${TARGET_PREFIX}gcc"
 export CXX_FOR_TARGET = "${TARGET_PREFIX}g++"
+export GCC_FOR_TARGET = "${TARGET_PREFIX}gcc"
 export LD_FOR_TARGET = "${TARGET_PREFIX}ld"
 export LIPO_FOR_TARGET = "${TARGET_PREFIX}lipo"
 export NM_FOR_TARGET = "${TARGET_PREFIX}nm"
@@ -69,7 +70,7 @@ EXCLUDE_FROM_SHLIBS = "1"
 PACKAGES = "${PN} ${PN}-doc"
 
 FILES_${PN} = "\
-    ${bindir}/* \
+    ${exec_prefix}/bin/* \
     ${libexecdir}/gcc/${TARGET_SYS}/${BINV}/* \
     ${gcclibdir}/${TARGET_SYS}/${BINV}/*.o \
     ${gcclibdir}/${TARGET_SYS}/${BINV}/specs \
@@ -102,6 +103,7 @@ do_install () {
 	# Cleanup some of the ${libdir}{,exec}/gcc stuff ...
 	rm -r ${D}${libdir}/gcc/${TARGET_SYS}/${BINV}/install-tools
 	rm -r ${D}${libexecdir}/gcc/${TARGET_SYS}/${BINV}/install-tools
+	rm -rf ${D}${libdir}/gcc/${TARGET_SYS}/${BINV}/finclude
 
 	# We care about g++ not c++
 	rm -f ${D}${bindir}/*c++
@@ -137,6 +139,8 @@ do_install () {
 	done
 
 	chown -R root:root ${D}
+	
+	cross_canadian_bindirlinks
 }
 
 ELFUTILS = "nativesdk-elfutils"

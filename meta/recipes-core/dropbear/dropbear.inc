@@ -1,13 +1,11 @@
-DESCRIPTION = "Dropbear is a lightweight SSH and SCP implementation"
+SUMMARY = "A lightweight SSH and SCP implementation"
 HOMEPAGE = "http://matt.ucc.asn.au/dropbear/dropbear.html"
 SECTION = "console/network"
-
-INC_PR = "r1"
 
 # some files are from other projects and have others license terms:
 #   public domain, OpenSSH 3.5p1, OpenSSH3.6.1p2, PuTTY
 LICENSE = "MIT"
-LIC_FILES_CHKSUM = "file://LICENSE;md5=3a5b0c2f0d0c49dfde9558ae2036683c"
+LIC_FILES_CHKSUM = "file://LICENSE;md5=de74413ba7e05b7a37c4722e75f436cd"
 
 DEPENDS = "zlib"
 RPROVIDES_${PN} = "ssh sshd" 
@@ -64,14 +62,10 @@ do_install() {
 				  -e 's,/usr/bin,${bindir},g' \
 				  -e 's,/usr,${prefix},g' > ${D}${sysconfdir}/init.d/dropbear
 	chmod 755 ${D}${sysconfdir}/init.d/dropbear
-	for i in ${DISTRO_FEATURES};
-	do
-		if [ ${i} = "pam" ];  then
-			install -d ${D}${sysconfdir}/pam.d
-			install -m 0644 ${WORKDIR}/dropbear  ${D}${sysconfdir}/pam.d/
-		fi
-	done
-
+	if [ "${@base_contains('DISTRO_FEATURES', 'pam', 'pam', '', d)}" = "pam" ]; then
+		install -d ${D}${sysconfdir}/pam.d
+		install -m 0644 ${WORKDIR}/dropbear  ${D}${sysconfdir}/pam.d/
+	fi
 }
 
 inherit update-alternatives

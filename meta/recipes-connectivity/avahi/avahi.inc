@@ -25,6 +25,7 @@ SRC_URI = "http://avahi.org/download/avahi-${PV}.tar.gz \
           file://avahi_fix_install_issue.patch \
           file://fix_for_automake_1.12.x.patch \
           file://out-of-tree.patch \
+          file://0001-avahi-fix-avahi-status-command-error-prompt.patch \
           "
 
 USERADD_PACKAGES = "avahi-daemon avahi-autoipd"
@@ -98,8 +99,8 @@ FILES_libavahi-gobject = "${libdir}/libavahi-gobject.so.*"
 FILES_avahi-utils = "${bindir}/avahi-*"
 
 # uclibc has no nss
-RRECOMMENDS_avahi-daemon_append_libc-glibc = "libnss-mdns"
-RRECOMMENDS_${PN}_append_libc-glibc = "libnss-mdns"
+RRECOMMENDS_avahi-daemon_append_libc-glibc = " libnss-mdns"
+RRECOMMENDS_${PN}_append_libc-glibc = " libnss-mdns"
 
 RRECOMMENDS_avahi-dev = "expat-dev libcap-dev libdaemon-dev dbus-dev glib-2.0-dev update-rc.d-dev"
 RRECOMMENDS_avahi-dev_append_libc-glibc = " gettext-dev"

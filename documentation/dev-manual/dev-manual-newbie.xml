@@ -406,38 +406,34 @@
     <title>Yocto Project Source Repositories</title>
 
     <para>
-        The Yocto Project team maintains complete source repositories for all Yocto Project files
-        at <ulink url='&YOCTO_GIT_URL;/cgit/cgit.cgi'></ulink>.
-        This web-based source code browser is organized into categories by function such as
-        IDE Plugins, Matchbox, Poky, Yocto Linux Kernel, and so forth.
-        From the interface, you can click on any particular item in the "Name" column and
-        see the URL at the bottom of the page that you need to clone a Git repository for
-        that particular item.
-        Having a local Git repository of the Source Directory (poky) allows you to
-        make changes, contribute to the history, and ultimately enhance the Yocto Project's
-        tools, Board Support Packages, and so forth.
+        The Yocto Project team maintains complete source repositories for all
+        Yocto Project files at
+        <ulink url='&YOCTO_GIT_URL;/cgit/cgit.cgi'></ulink>.
+        This web-based source code browser is organized into categories by
+        function such as IDE Plugins, Matchbox, Poky, Yocto Linux Kernel, and
+        so forth.
+        From the interface, you can click on any particular item in the "Name"
+        column and see the URL at the bottom of the page that you need to clone
+        a Git repository for that particular item.
+        Having a local Git repository of the Source Directory (poky) allows
+        you to make changes, contribute to the history, and ultimately enhance
+        the Yocto Project's tools, Board Support Packages, and so forth.
     </para>
 
     <para>
-        Conversely, if you are a developer that is not interested in contributing back to the
-        Yocto Project, you have the ability to simply download and extract release tarballs
-        and use them within the Yocto Project environment.
-        All that is required is a particular release of the Yocto Project and
-        your application source code.
-    </para>
-
-    <para>
-        For any supported release of Yocto Project, you can go to the
+        For any supported release of Yocto Project, you can also go to the
         <ulink url='&YOCTO_HOME_URL;'>Yocto Project Website</ulink> and
-        select the "Downloads" tab and get a tarball of the release.
-        You can also go to this site to download any supported BSP tarballs.
-        Unpacking the tarball gives you a hierarchical Source Directory that lets you develop
-        using the Yocto Project.
-    </para>
-
-    <para>
-        Once you are set up through either tarball extraction or a checkout of Git repositories,
-        you are ready to develop.
+        select the "Downloads" tab and get a released tarball of the
+        <filename>poky</filename> repository or any supported BSP tarballs.
+        Unpacking these tarballs gives you a snapshot of the released
+        files.
+        <note>
+            The recommended method for setting up the Yocto Project
+            <link linkend='source-directory'>Source Directory</link> and the
+            files for supported BSPs (e.g., <filename>meta-intel</filename>) is to
+            use <link linkend='git'>Git</link> to create a local copy of the
+            upstream repositories.
+        </note>
     </para>
 
     <para>
@@ -514,27 +510,40 @@
                 The <ulink url='&YOCTO_DOCS_REF_URL;#var-TOPDIR'><filename>TOPDIR</filename></ulink>
                 variable points to the Build Directory.</para>
 
-                <para>You have a lot of flexibility when creating the Build Directory.
-                Following are some examples that show how to create the directory:
+                <para>
+                    You have a lot of flexibility when creating the Build
+                    Directory.
+                    Following are some examples that show how to create the
+                    directory.
+                    The examples assume your
+                    <link linkend='source-directory'>Source Directory</link> is
+                    named <filename>poky</filename>:
                    <itemizedlist>
-                        <listitem><para>Create the Build Directory in your current working directory
-                            and name it <filename>build</filename>.
-                            This is the default behavior.
+                        <listitem><para>Create the Build Directory inside your
+                            Source Directory and let the name of the Build
+                            Directory default to <filename>build</filename>:
                             <literallayout class='monospaced'>
-     $ source &OE_INIT_PATH;
+     $ cd $HOME/poky
+     $ source &OE_INIT_FILE;
                             </literallayout></para></listitem>
-                        <listitem><para>Provide a directory path and specifically name the build
-                            directory.
-                            This next example creates a Build Directory named <filename>YP-&POKYVERSION;</filename>
-                            in your home directory within the directory <filename>mybuilds</filename>.
-                            If <filename>mybuilds</filename> does not exist, the directory is created for you:
+                        <listitem><para>Create the Build Directory inside your
+                            home directory and specifically name it
+                            <filename>test-builds</filename>:
                             <literallayout class='monospaced'>
-     $ source &OE_INIT_PATH; $HOME/mybuilds/YP-&POKYVERSION;
+     $ cd $HOME
+     $ source poky/&OE_INIT_FILE; test-builds
                             </literallayout></para></listitem>
-                        <listitem><para>Provide an existing directory to use as the Build Directory
-                            and use the default <filename>build</filename> name.
+                        <listitem><para>Provide a directory path and
+                            specifically name the build directory.
+                            Any intermediate folders in the pathname must
+                            exist.
+                            This next example creates a Build Directory named
+                            <filename>YP-&POKYVERSION;</filename>
+                            in your home directory within the existing
+                            directory <filename>mybuilds</filename>:
                             <literallayout class='monospaced'>
-     $ source &OE_INIT_PATH; $HOME/mybuilds/
+     $cd $HOME
+     $ source $HOME/poky/&OE_INIT_FILE; $HOME/mybuilds/YP-&POKYVERSION;
                             </literallayout></para></listitem>
                     </itemizedlist>
                 </para></listitem>
@@ -647,6 +656,17 @@
                 <ulink url='&YOCTO_DOCS_REF_URL;#var-PV'><filename>PV</filename></ulink>, and
                 <ulink url='&YOCTO_DOCS_REF_URL;#var-PE'><filename>PE</filename></ulink>).
                 </para></listitem>
+            <listitem><para><emphasis>Package Groups:</emphasis>
+                Arbitrary groups of software Recipes.
+                You use package groups to hold recipes that, when built,
+                usually accomplish a single task.
+                For example, a package group could contain the recipes for a
+                company’s proprietary or value-add software.
+                Or, the package group could contain the recipes that enable
+                graphics.
+                A package group is really just another recipe.
+                Because package group files are recipes, they end with the
+                <filename>.bb</filename> filename extension.</para></listitem>
             <listitem><para id='poky'><emphasis>Poky:</emphasis> The term "poky" can mean several things.
                 In its most general sense, it is an open-source project that was initially developed
                 by OpenedHand.  With OpenedHand, poky was developed off of the existing OpenEmbedded
@@ -666,63 +686,69 @@
                 use the <filename>.bb</filename> file extension.</para></listitem>
             <listitem>
                 <para id='source-directory'><emphasis>Source Directory:</emphasis>
-                This term refers to the directory structure created as a result of either downloading
-                and unpacking a Yocto Project release tarball or creating a local copy of
-                the <filename>poky</filename> Git repository
-                <filename>git://git.yoctoproject.org/poky</filename>.
-                Sometimes you might hear the term "poky directory" used to refer to this
-                directory structure.
+                This term refers to the directory structure created as a result
+                of creating a local copy of the <filename>poky</filename> Git
+                repository <filename>git://git.yoctoproject.org/poky</filename>
+                or expanding a released <filename>poky</filename> tarball.
+                Sometimes you might hear the term "poky directory" used to refer
+                to this directory structure.
                 <note>
-                    The OpenEmbedded build system does not support file or directory names that
-                    contain spaces.
-                    Be sure that the Source Directory you use does not contain these types
-                    of names.
+                    The OpenEmbedded build system does not support file or
+                    directory names that contain spaces.
+                    Be sure that the Source Directory you use does not contain
+                    these types of names.
                 </note></para>
-                <para>The Source Directory contains BitBake, Documentation, Metadata and
-                other files that all support the Yocto Project.
-                Consequently, you must have the Source Directory in place on your development
-                system in order to do any development using the Yocto Project.</para>
 
-                <para>For tarball expansion, the name of the top-level directory of the Source Directory
-                is derived from the Yocto Project release tarball.
-                For example, downloading and unpacking <filename>&YOCTO_POKY_TARBALL;</filename>
-                results in a Source Directory whose top-level folder is named
-                <filename>&YOCTO_POKY;</filename>.
-                If you create a local copy of the Git repository, you can name the repository
-                anything you like.
-                Throughout much of the documentation, <filename>poky</filename> is used as the name of
-                the top-level folder of the local copy of the poky Git repository.
-                So, for example, cloning the <filename>poky</filename> Git repository results in a
-                local Git repository whose top-level folder is also named <filename>poky</filename>.</para>
+                <para>The Source Directory contains BitBake, Documentation,
+                Metadata and other files that all support the Yocto Project.
+                Consequently, you must have the Source Directory in place on
+                your development system in order to do any development using
+                the Yocto Project.</para>
 
-                <para>It is important to understand the differences between the Source Directory created
-                by unpacking a released tarball as compared to cloning
+                <para>When you create a local copy of the Git repository, you
+                can name the repository anything you like.
+                Throughout much of the documentation, <filename>poky</filename>
+                is used as the name of the top-level folder of the local copy of
+                the poky Git repository.
+                So, for example, cloning the <filename>poky</filename> Git
+                repository results in a local Git repository whose top-level
+                folder is also named <filename>poky</filename>.</para>
+
+                <para>While it is not recommended that you use tarball expansion
+                to setup the Source Directory, if you do, the top-level
+                directory name of the Source Directory is derived from the
+                Yocto Project release tarball.
+                For example, downloading and unpacking
+                <filename>&YOCTO_POKY_TARBALL;</filename> results in a
+                Source Directory whose root folder is named
+                <filename>&YOCTO_POKY;</filename>.</para>
+
+                <para>It is important to understand the differences between the
+                Source Directory created by unpacking a released tarball as
+                compared to cloning
                 <filename>git://git.yoctoproject.org/poky</filename>.
-                When you unpack a tarball, you have an exact copy of the files based on the time of
-                release - a fixed release point.
-                Any changes you make to your local files in the Source Directory are on top of the release.
-                On the other hand, when you clone the <filename>poky</filename> Git repository, you have an
-                active development repository.
-                In this case, any local changes you make to the Source Directory can be later applied
-                to active development branches of the upstream <filename>poky</filename> Git
+                When you unpack a tarball, you have an exact copy of the files
+                based on the time of release - a fixed release point.
+                Any changes you make to your local files in the Source Directory
+                are on top of the release and will remain local only.
+                On the other hand, when you clone the <filename>poky</filename>
+                Git repository, you have an active development repository with
+                access to the upstream repository's branches and tags.
+                In this case, any local changes you make to the local
+                Source Directory can be later applied to active development
+                branches of the upstream <filename>poky</filename> Git
                 repository.</para>
 
-                <para>Finally, if you want to track a set of local changes while starting from the same point
-                as a release tarball, you can create a local Git branch that
-                reflects the exact copy of the files at the time of their release.
-                You do this by using Git tags that are part of the repository.</para>
-
-                <para>For more information on concepts related to Git repositories, branches, and tags,
-                see the
+                <para>For more information on concepts related to Git
+                repositories, branches, and tags, see the
                 "<link linkend='repositories-tags-and-branches'>Repositories, Tags, and Branches</link>"
                 section.</para></listitem>
-            <listitem><para><emphasis>Tasks:</emphasis> Arbitrary groups of software Recipes.
-                You use tasks to hold recipes that, when built, usually accomplish a single task.
-                For example, a task could contain the recipes for a company’s proprietary or value-add software.
-                Or, the task could contain the recipes that enable graphics.
-                A task is really just another recipe.
-                Because task files are recipes, they end with the <filename>.bb</filename> filename
-                extension.</para></listitem>
+            <listitem><para><emphasis>Task:</emphasis>
+                A unit of execution for BitBake (e.g.
+                <filename>do_compile</filename>,
+                <filename>do_fetch</filename>, <filename>do_patch</filename>,
+                and so forth).
+                </para></listitem>
             <listitem><para><emphasis>Upstream:</emphasis> A reference to source code or repositories
                 that are not local to the development system but located in a master area that is controlled
                 by the maintainer of the source code.
@@ -807,7 +833,8 @@
     <title>Git</title>
 
     <para>
-        The Yocto Project uses Git, which is a free, open source distributed version control system.
+        The Yocto Project makes extensive use of Git,
+        which is a free, open source distributed version control system.
         Git supports distributed development, non-linear development, and can handle large projects.
         It is best that you have some fundamental understanding of how Git tracks projects and
         how to work with Git if you are going to use the Yocto Project for development.
@@ -911,7 +938,7 @@
             local working branch based on a branch name,
             your local environment matches the "tip" of that development branch
             at the time you created your local branch, which could be
-            different than the files at the time of a similarly named release.
+            different from the files at the time of a similarly named release.
             In other words, creating and checking out a local branch based on the
             <filename>&DISTRO_NAME;</filename> branch name is not the same as
             cloning and checking out the <filename>master</filename> branch.
@@ -1004,7 +1031,7 @@
                     will allow the change, and for ultimately pushing the change from your local Git repository
                     into the project’s upstream (or master) repository.</para></listitem>
                 <listitem><para><emphasis><filename>git status</filename>:</emphasis> Reports any modified files that
-                    possibly need staged and committed.</para></listitem>
+                    possibly need to be staged and committed.</para></listitem>
                 <listitem><para><emphasis><filename>git checkout &lt;branch-name&gt;</filename>:</emphasis> Changes
                     your working branch.
                     This command is analogous to "cd".</para></listitem>
@@ -1281,10 +1308,9 @@
             <listitem><para><emphasis>Board Support Package (BSP) README Files:</emphasis>
                 For BSP maintainers of supported BSPs, you can examine
                 individual BSP <filename>README</filename> files.
-                Alternatively, you can examine the
-                <filename>MAINTAINERS</filename> file, which is found in the
-                <filename>meta-intel</filename>, for a list of all supported
-                BSP maintainers.
+                In addition, some layers (such as the <filename>meta-intel</filename> layer),
+                include a <filename>MAINTAINERS</filename> file which contains
+                a list of all supported BSP maintainers for that layer.
                 </para></listitem>
             <listitem><para><emphasis>Search by File:</emphasis>
                 Using <link linkend='git'>Git</link>, you can enter the
@@ -1459,8 +1485,8 @@
                     <para>For help on using these scripts, simply provide the
                     <filename>-h</filename> argument as follows:
                     <literallayout class='monospaced'>
-     $ ~/poky/scripts/create-pull-request -h
-     $ ~/poky/scripts/send-pull-request -h
+     $ poky/scripts/create-pull-request -h
+     $ poky/scripts/send-pull-request -h
                     </literallayout></para></listitem>
             </itemizedlist>
         </para>

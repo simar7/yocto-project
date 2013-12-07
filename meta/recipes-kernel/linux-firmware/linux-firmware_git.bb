@@ -45,6 +45,12 @@ do_install() {
 	# Avoid Makefile to be deplyed
 	rm ${D}/lib/firmware/Makefile
 
+	# Remove unbuild firmware which needs cmake and bash
+	rm ${D}/lib/firmware/carl9170fw -rf
+
+	# Remove pointless bash script
+	rm ${D}/lib/firmware/configure
+
 	# Libertas sd8686
 	ln -sf libertas/sd8686_v9.bin ${D}/lib/firmware/sd8686.bin
 	ln -sf libertas/sd8686_v9_helper.bin ${D}/lib/firmware/sd8686_helper.bin
@@ -60,7 +66,7 @@ PACKAGES =+ "${PN}-ralink \
              ${PN}-rtl-license ${PN}-rtl8192cu ${PN}-rtl8192ce ${PN}-rtl8192su \
              ${PN}-broadcom-license ${PN}-bcm4329 ${PN}-bcm4330 ${PN}-bcm4334 \
              ${PN}-atheros-license ${PN}-ar9170 ${PN}-ar3k ${PN}-ath6k ${PN}-ath9k \
-             ${PN}-iwlwifi-license ${PN}-iwlwifi-6000g2a-5 ${PN}-iwlwifi-6000g2b-6"
+             ${PN}-iwlwifi-license ${PN}-iwlwifi-6000g2a-5 ${PN}-iwlwifi-6000g2b-6 ${PN}-iwlwifi-7260-7"
 
 FILES_${PN}-atheros-license = "/lib/firmware/LICENCE.atheros_firmware"
 

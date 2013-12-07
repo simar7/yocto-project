@@ -3,18 +3,26 @@ require recipes-kernel/linux/linux-yocto.inc
 KBRANCH_DEFAULT = "standard/base"
 KBRANCH = "${KBRANCH_DEFAULT}"
 
-SRCREV_machine_qemuarm ?= "aa1fa3cec7bd6e47f29acc5b5fbffddc16569883"
-SRCREV_machine_qemumips  ?= "5b908fd12f60de1e51e932c5df477a49b0ab2b40"
-SRCREV_machine_qemuppc ?= "e80029ac30022c554e916ed438435ecc03cc2cea"
-SRCREV_machine_qemux86 ?= "e1aa804148370cda6f85640281af156ffa007d52"
-SRCREV_machine_qemux86-64 ?= "e1aa804148370cda6f85640281af156ffa007d52"
-SRCREV_machine_qemumips64 ?= "6973844d304411893420a7e57545edc4dc854bd7"
-SRCREV_machine ?= "e1aa804148370cda6f85640281af156ffa007d52"
-SRCREV_meta ?= "452f0679ea93a6cb4433bebd7177629228a5cf68"
+# board specific branches
+KBRANCH_qemuarm  = "standard/arm-versatile-926ejs"
+KBRANCH_qemumips = "standard/mti-malta32"
+KBRANCH_qemuppc  = "standard/qemuppc"
+KBRANCH_qemux86  = "standard/common-pc/base"
+KBRANCH_qemux86-64  = "standard/common-pc-64/base"
+KBRANCH_qemumips64 = "standard/mti-malta64"
+
+SRCREV_machine_qemuarm ?= "7744145fcc3e4b6b6e308a1b86dc1c8b237b7575"
+SRCREV_machine_qemumips  ?= "2b8e8c694c38729ce724facdb0ab20751d061a2e"
+SRCREV_machine_qemuppc ?= "9a7537cb9bcc5c835dae6ac84fbbe7298473f69c"
+SRCREV_machine_qemux86 ?= "a9ec82e355130160f9094e670bd5be0022a84194"
+SRCREV_machine_qemux86-64 ?= "a9ec82e355130160f9094e670bd5be0022a84194"
+SRCREV_machine_qemumips64 ?= "0cd8e958d0ec7e01fd21fc7891da7eed688b0d37"
+SRCREV_machine ?= "a9ec82e355130160f9094e670bd5be0022a84194"
+SRCREV_meta ?= "f47ea2844543c8ebf4572cfe23e4cfd6cb94d887"
 
 SRC_URI = "git://git.yoctoproject.org/linux-yocto-3.10.git;bareclone=1;branch=${KBRANCH},${KMETA};name=machine,meta"
 
-LINUX_VERSION ?= "3.10.11"
+LINUX_VERSION ?= "3.10.19"
 
 PV = "${LINUX_VERSION}+git${SRCPV}"
 

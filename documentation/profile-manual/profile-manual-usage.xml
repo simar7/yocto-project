@@ -22,7 +22,7 @@
     <para>
         Don't let the fact that it's part of the kernel fool you into thinking
         that it's only for tracing and profiling the kernel - you can indeed
-        use it to trace and profile just the kernel , but you can also use it
+        use it to trace and profile just the kernel, but you can also use it
         to profile specific applications separately (with or without kernel
         context), and you can also use it to trace and profile the kernel
         and all applications on the system simultaneously to gain a system-wide
@@ -30,10 +30,10 @@
     </para>
 
     <para>
-        In many ways, it aims to be a superset of all the tracing and profiling
+        In many ways, perf aims to be a superset of all the tracing and profiling
         tools available in Linux today, including all the other tools covered
         in this HOWTO. The past couple of years have seen perf subsume a lot
-        of the functionality of those other tools, and at the same time those
+        of the functionality of those other tools and, at the same time, those
         other tools have removed large portions of their previous functionality
         and replaced it with calls to the equivalent functionality now
         implemented by the perf subsystem. Extrapolation suggests that at
@@ -126,7 +126,7 @@
      wget <ulink url='http://downloads.yoctoproject.org/mirror/sources/linux-2.6.19.2.tar.bz2'>http://downloads.yoctoproject.org/mirror/sources/linux-2.6.19.2.tar.bz2</ulink>
                 </literallayout>
                 The quickest and easiest way to get some basic overall data about
-                what's going on for a particular workload it to profile it using
+                what's going on for a particular workload is to profile it using
                 'perf stat'. 'perf stat' basically profiles using a few default
                 counters and displays the summed counts at the end of the run:
                 <literallayout class='monospaced'>
@@ -201,7 +201,7 @@
                 As our first attempt at profiling this workload, we'll simply
                 run 'perf record', handing it the workload we want to profile
                 (everything after 'perf record' and any perf options we hand
-                it - here none - will be executedin a new shell). perf collects
+                it - here none - will be executed in a new shell). perf collects
                 samples until the process exits and records them in a file named
                 'perf.data' in the current working directory.
                 <literallayout class='monospaced'>
@@ -241,7 +241,7 @@
                 Notice also that the above report shows an entry for 'busybox',
                 which is the executable that implements 'wget' in Yocto, but that
                 instead of a useful function name in that entry, it displays
-                an not-so-friendly hex value instead. The steps below will show
+                a not-so-friendly hex value instead. The steps below will show
                 how to fix that problem.
             </para>
 
@@ -308,7 +308,7 @@
             </para>
 
             <para>
-                Notice also that here there's also a case where the a hex value
+                Notice also that here there's also a case where the hex value
                 is displayed in the callstack, here in the expanded
                 sys_clock_gettime() function. Later we'll see it resolve to a
                 userspace function call in busybox.
@@ -367,7 +367,7 @@
 
             <para>
                 To generate the debug info for the packages in the image, we can
-                to add dbg-pkgs to EXTRA_IMAGE_FEATURES in local.conf. For example:
+                add dbg-pkgs to EXTRA_IMAGE_FEATURES in local.conf. For example:
                 <literallayout class='monospaced'>
      EXTRA_IMAGE_FEATURES = "debug-tweaks tools-profile dbg-pkgs"
                 </literallayout>
@@ -462,7 +462,7 @@
                 The tracing and profiling infrastructure in Linux has become
                 unified in a way that allows us to use the same tool with a
                 completely different set of counters, not just the standard
-                hardware counters that traditionally tools have had to restrict
+                hardware counters that traditional tools have had to restrict
                 themselves to (of course the traditional tools can also make use
                 of the expanded possibilities now available to them, and in some
                 cases have, as mentioned previously).
@@ -828,7 +828,7 @@
             </para>
 
             <para>
-                Luckily, there is general-purpose way to handle such needs,
+                Luckily, there is a general-purpose way to handle such needs,
                 called 'programming languages'. Making programming languages
                 easily available to apply to such problems given the specific
                 format of data is called a 'programming language binding' for
@@ -925,9 +925,9 @@
                 </literallayout>
                 Each event handler function in the generated code is modified
                 to do this. For convenience, we define a common function called
-                inc_counts() that each handler calls; inc_counts simply tallies
+                inc_counts() that each handler calls; inc_counts() simply tallies
                 a count for each event using the 'counts' hash, which is a
-                specialized has function that does Perl-like autovivification, a
+                specialized hash function that does Perl-like autovivification, a
                 capability that's extremely useful for kinds of multi-level
                 aggregation commonly used in processing traces (see perf's
                 documentation on the Python language binding for details):
@@ -1377,7 +1377,7 @@
             the /tracing directory of the mounted debugfs filesystem
             (Yocto follows the standard convention and mounts it
             at /sys/kernel/debug). Here's a listing of all the files
-            found in /sys/kernel/debug/tracing on a Yocto system.:
+            found in /sys/kernel/debug/tracing on a Yocto system:
             <literallayout class='monospaced'>
      root@sugarbay:/sys/kernel/debug/tracing# ls
      README                      kprobe_events               trace
@@ -1634,7 +1634,7 @@
             Also notice that there are various annotations on the left
             hand side of the display. For example if the total time it
             took for a given function to execute is above a certain
-            threshold, and exclamation point or plus sign appears on the
+            threshold, an exclamation point or plus sign appears on the
             left hand side. Please see the ftrace documentation for
             details on all these fields.
         </para>
@@ -1842,7 +1842,7 @@
             </literallayout>
             You can enable any number of events or complete subsystems
             (by using the 'enable' file in the subsystem directory) and
-            get am arbitrarily fine-grained idea of what's going on in the
+            get an arbitrarily fine-grained idea of what's going on in the
             system by enabling as many of the appropriate tracepoints
             as applicable.
         </para>
@@ -1878,14 +1878,14 @@
             in /sys/kernel/debug/tracing, allowing users to specify
             specific particular events within the
             /sys/kernel/debug/tracing/events/ subdirectory and to collect
-            traces and avoiding having to deal with those details directly.
+            traces and avoid having to deal with those details directly.
         </para>
 
         <para>
             As yet another layer on top of that, kernelshark provides a GUI
             that allows users to start and stop traces and specify sets
             of events using an intuitive interface, and view the
-            output as both trace events and as a per-cpu graphical
+            output as both trace events and as a per-CPU graphical
             display. It directly uses 'trace-cmd' as the plumbing
             that accomplishes all that underneath the covers (and
             actually displays the trace-cmd command it uses, as we'll see).
@@ -1896,13 +1896,13 @@
             <literallayout class='monospaced'>
      root@sugarbay:~# kernelshark
             </literallayout>
-            The bring up the 'Capture' dialog by choosing from the
+            Then bring up the 'Capture' dialog by choosing from the
             kernelshark menu:
             <literallayout class='monospaced'>
      Capture | Record
             </literallayout>
             That will display the following dialog, which allows you to
-            choose on or more events (or even one or more complete
+            choose one or more events (or even one or more complete
             subsystems) to trace:
         </para>
 
@@ -1911,7 +1911,7 @@
         </para>
 
         <para>
-            Note that these are exactly the same set of events described
+            Note that these are exactly the same sets of events described
             in the previous trace events subsystem section, and in fact
             is where trace-cmd gets them for kernelshark.
         </para>
@@ -1980,12 +1980,14 @@
             <literallayout class='monospaced'>
      Documentation/trace/events.txt
             </literallayout>
-            There are a nice series of articles on using
+            There is a nice series of articles on using
             ftrace and trace-cmd at LWN:
             <itemizedlist>
                 <listitem><para><ulink url='http://lwn.net/Articles/365835/'>Debugging the kernel using Ftrace - part 1</ulink>
                     </para></listitem>
                 <listitem><para><ulink url='http://lwn.net/Articles/366796/'>Debugging the kernel using Ftrace - part 2</ulink>
+                    </para></listitem>
+                <listitem><para><ulink url='http://lwn.net/Articles/370423/'>Secrets of the Ftrace function tracer</ulink>
                     </para></listitem>
                 <listitem><para><ulink url='https://lwn.net/Articles/410200/'>trace-cmd: A front-end for Ftrace</ulink>
                     </para></listitem>
@@ -2022,7 +2024,7 @@
         <ulink url='http://sourceware.org/systemtap/tutorial/'>SystemTap tutorial</ulink>
         simply prints a line every time any process on the system open()s
         a file. For each line, it prints the executable name of the
-        program that opened the file, along with its pid, and the name
+        program that opened the file, along with its PID, and the name
         of the file it opened (or tried to open), which it extracts
         from the open syscall's argstr.
         <literallayout class='monospaced'>
@@ -2096,6 +2098,15 @@
             booted. The 'crosstap' script provides details on how
             to do this if you run the script on the host without having
             done a build:
+            <note>
+                SystemTap, which uses 'crosstap', assumes you can establish an
+                ssh connection to the remote target.
+                Please refer to the crosstap wiki page for details on verifying
+                ssh connections at
+                <ulink url='https://wiki.yoctoproject.org/wiki/Tracing_and_Profiling#systemtap'></ulink>.
+                Also, the ability to ssh into the target system is not enabled
+                by default in *-minimal images.
+            </note>
             <literallayout class='monospaced'>
      $ crosstap root@192.168.1.88 trace_open.stp
 
@@ -2121,9 +2132,6 @@
           [ edit local.conf and add 'tools-profile' to the end of
             the EXTRA_IMAGE_FEATURES variable ]
           $ bitbake core-image-sato
-
-      [ NOTE that 'crosstap' needs to be able to ssh into the target
-        system, which isn't enabled by default in -minimal images. ]
 
      Once you've build the image on the host system, you're ready to
      boot it (or the equivalent pre-built image) and use 'crosstap'
@@ -2195,7 +2203,7 @@
         <para>
             If everything worked as planned, you should see something
             like this (enter the password when prompted, or press enter
-            if its set up to use no password):
+            if it's set up to use no password):
             <literallayout class='monospaced'>
      $ crosstap root@192.168.7.2 trace_open.stp
      root@192.168.7.2's password:
@@ -2240,7 +2248,7 @@
         </para>
 
         <para>
-            For the the section that deals with oprofile from the command-line,
+            For the section that deals with running oprofile from the command-line,
             we assume you've ssh'ed to the host and will be running
             oprofile on the target.
         </para>
@@ -2260,7 +2268,7 @@
             Oprofile as configured in Yocto is a system-wide profiler
             (i.e. the version in Yocto doesn't yet make use of the
             perf_events interface which would allow it to profile
-            specific processes and workloads). It's relies on hardware
+            specific processes and workloads). It relies on hardware
             counter support in the hardware (but can fall back to a
             timer-based mode), which means that it doesn't take
             advantage of tracepoints or other event sources for example.
@@ -2281,8 +2289,8 @@
         <para>
             The oprofile daemon should already be running, but before
             you start profiling, you may need to change some settings
-            and some of these settings may require the daemon not
-            be running. One of these settings is the path the the
+            and some of these settings may require the daemon to not
+            be running. One of these settings is the path to the
             vmlinux file, which you'll want to set using the --vmlinux
             option if you want the kernel profiled:
             <literallayout class='monospaced'>
@@ -2313,7 +2321,7 @@
      Using log file /var/lib/oprofile/samples/oprofiled.log
      Daemon started.
             </literallayout>
-            If we get the status again we now see our updated settings:
+            If we check the status again we now see our updated settings:
             <literallayout class='monospaced'>
      root@crownbay:~# opcontrol --status
      Daemon paused: pid 1649
@@ -2322,7 +2330,7 @@
      Image filter: none
      Call-graph depth: 6
             </literallayout>
-            We're now in a position to run a profile. For that we used
+            We're now in a position to run a profile. For that we use
             'opcontrol --start':
             <literallayout class='monospaced'>
      root@crownbay:~# opcontrol --start
@@ -2334,10 +2342,10 @@
      Connecting to downloads.yoctoproject.org (140.211.169.59:80)
      linux-2.6.19.2.tar.b 100% |*******************************| 41727k  0:00:00 ETA
             </literallayout>
-            To stop the profile we use 'opcontrol --shudown', which not
+            To stop the profile we use 'opcontrol --shutdown', which not
             only stops the profile but shuts down the daemon as well:
             <literallayout class='monospaced'>
-     root@crownbay:~# opcontrol --start
+     root@crownbay:~# opcontrol --shutdown
      Stopping profiling.
      Killing daemon.
             </literallayout>
@@ -2896,7 +2904,7 @@
 
         <para>
             Once you've applied the above commits and built and booted your
-            image (you need to build the core-image-sato-sdk image or the
+            image (you need to build the core-image-sato-sdk image or use one of the
             other methods described in the General Setup section), you're
             ready to start tracing.
         </para>
@@ -2905,7 +2913,7 @@
             <title>Collecting and viewing a trace on the target (inside a shell)</title>
 
             <para>
-                First, from the target, ssh to the target:
+                First, from the host, ssh to the target:
                 <literallayout class='monospaced'>
      $ ssh -l root 192.168.1.47
      The authenticity of host '192.168.1.47 (192.168.1.47)' can't be established.
@@ -3006,7 +3014,7 @@
             <title>Collecting and viewing a userspace trace on the target (inside a shell)</title>
 
             <para>
-                For lttng userspace tracing, you need to have a properly
+                For LTTng userspace tracing, you need to have a properly
                 instrumented userspace program. For this example, we'll use
                 the 'hello' test program generated by the lttng-ust build.
             </para>
@@ -3028,7 +3036,7 @@
             </para>
 
             <para>
-                First, from the target, ssh to the target:
+                First, from the host, ssh to the target:
                 <literallayout class='monospaced'>
      $ ssh -l root 192.168.1.47
      The authenticity of host '192.168.1.47 (192.168.1.47)' can't be established.
@@ -3594,7 +3602,7 @@
                 It's also possible to trace block I/O using only
                 <link linkend='the-trace-events-subsystem'>trace events subsystem</link>,
                 which can be useful for casual tracing
-                if you don't want bother dealing with the userspace tools.
+                if you don't want to bother dealing with the userspace tools.
             </para>
 
             <para>

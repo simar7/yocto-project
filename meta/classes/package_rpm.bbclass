@@ -296,11 +296,7 @@ package_install_internal_rpm () {
 		if [ ! -z "$INSTALL_PLATFORM_EXTRA_RPM" ]; then
 			for pt in $INSTALL_PLATFORM_EXTRA_RPM ; do
 				channel_priority=$(expr $channel_priority + 5)
-				case $pt in
-					noarch-* | any-* | all-*)
-						pt=$(echo $pt | sed "s,-linux.*$,-linux\.*,")
-						;;
-				esac
+				pt=$(echo $pt | sed "s,-linux.*$,-linux\.*,")
 				echo "$pt" >> ${target_rootfs}/etc/rpm/platform
 			done
 		fi
@@ -660,9 +656,16 @@ python write_specfile () {
                     array.append("%s: %s" % (tag, dep))
 
     def walk_files(walkpath, target, conffiles):
+        # We can race against the ipk/deb backends which create CONTROL or DEBIAN directories
+        # when packaging. We just ignore these files which are created in 
+        # packages-split/ and not package/
         for rootpath, dirs, files in os.walk(walkpath):
             path = rootpath.replace(walkpath, "")
+            if path.endswith("DEBIAN") or path.endswith("CONTROL"):
+                continue
             for dir in dirs:
+                if dir == "CONTROL" or dir == "DEBIAN":
+                    continue
                 # All packages own the directories their files are in...
                 target.append('%dir "' + path + '/' + dir + '"')
             for file in files:
@@ -760,8 +763,6 @@ python write_specfile () {
 
         root = "%s/%s" % (pkgdest, pkg)
 
-        lf = bb.utils.lockfile(root + ".lock")
-
         localdata.setVar('ROOT', '')
         localdata.setVar('ROOT_%s' % pkg, root)
         pkgname = localdata.getVar('PKG_%s' % pkg, True)
@@ -842,8 +843,6 @@ python write_specfile () {
                 else:
                     bb.note("Creating EMPTY RPM Package for %s" % splitname)
                 spec_files_top.append('')
-
-            bb.utils.unlockfile(lf)
             continue
 
         # Process subpackage data
@@ -949,7 +948,6 @@ python write_specfile () {
             spec_files_bottom.append('')
 
         del localdata
-        bb.utils.unlockfile(lf)
     
     add_prep(d,spec_files_bottom)
     spec_preamble_top.append('Summary: %s' % srcsummary)

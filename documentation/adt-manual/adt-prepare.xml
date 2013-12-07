@@ -80,39 +80,48 @@
 
             <para>
                 The ADT Installer is contained in the ADT Installer tarball.
-                You can download the tarball into any directory from the
-                <ulink url='&YOCTO_DL_URL;/releases'>Index of Releases</ulink>, specifically
-                at
-                <ulink url='&YOCTO_ADTINSTALLER_DL_URL;'></ulink>.
-                Or, you can use BitBake to generate the tarball inside the existing
-                <ulink url='&YOCTO_DOCS_DEV_URL;#build-directory'>Build Directory</ulink>.
-            </para>
-
-            <para>
-                If you use BitBake to generate the ADT Installer tarball, you must
-                <filename>source</filename> the environment setup script
-                (<ulink url='&YOCTO_DOCS_REF_URL;#structure-core-script'><filename>&OE_INIT_FILE;</filename></ulink>
-                or
-                <ulink url='&YOCTO_DOCS_REF_URL;#structure-memres-core-script'><filename>oe-init-build-env-memres</filename></ulink>)
-                located in the Source Directory before running the
-                BitBake command that creates the tarball.
-            </para>
-
-            <para>
-                The following example commands download the Poky tarball, set up the
-                <ulink url='&YOCTO_DOCS_DEV_URL;#source-directory'>Source Directory</ulink>,
-                set up the environment while also creating the default Build Directory,
-                and run the BitBake command that results in the tarball
-                <filename>~/yocto-project/build/tmp/deploy/sdk/adt_installer.tar.bz2</filename>:
-                <literallayout class='monospaced'>
+                You can get the tarball using either of these methods:
+                <itemizedlist>
+                    <listitem><para><emphasis>Download the Tarball:</emphasis>
+                        You can download the tarball from
+                        <ulink url='&YOCTO_ADTINSTALLER_DL_URL;'></ulink> into
+                        any directory.</para></listitem>
+                    <listitem><para><emphasis>Build the Tarball:</emphasis>
+                        You can use BitBake to generate the tarball inside an
+                        existing
+                        <ulink url='&YOCTO_DOCS_DEV_URL;#build-directory'>Build Directory</ulink>.
+                        </para>
+                        <para>If you use BitBake to generate the ADT Installer
+                        tarball, you must <filename>source</filename> the
+                        environment setup script
+                        (<ulink url='&YOCTO_DOCS_REF_URL;#structure-core-script'><filename>&OE_INIT_FILE;</filename></ulink>
+                        or
+                        <ulink url='&YOCTO_DOCS_REF_URL;#structure-memres-core-script'><filename>oe-init-build-env-memres</filename></ulink>)
+                        located in the Source Directory before running the
+                        BitBake command that creates the tarball.</para>
+                        <para>The following example commands establish
+                        the
+                        <ulink url='&YOCTO_DOCS_DEV_URL;#source-directory'>Source Directory</ulink>,
+                        check out the current release branch, set up the
+                        build environment while also creating the default
+                        Build Directory, and run the BitBake command that
+                        results in the tarball
+                        <filename>poky/build/tmp/deploy/sdk/adt_installer.tar.bz2</filename>:
+                        <note>
+                            Before using BitBake to build the ADT tarball, be
+                            sure to make sure your
+                            <filename>local.conf</filename> file is properly
+                            configured.
+                        </note>
+                        <literallayout class='monospaced'>
      $ cd ~
-     $ mkdir yocto-project
-     $ cd yocto-project
-     $ wget &YOCTO_RELEASE_DL_URL;/&YOCTO_POKY_TARBALL;
-     $ tar xjf &YOCTO_POKY_TARBALL;
-     $ source &OE_INIT_PATH;
+     $ git clone git://git.yoctoproject.org/poky
+     $ cd poky
+     $ git checkout -b &DISTRO_NAME; origin/&DISTRO_NAME;
+     $ source &OE_INIT_FILE;
      $ bitbake adt-installer
-                </literallayout>
+                        </literallayout></para></listitem>
+                </itemizedlist>
             </para>
         </section>
 
@@ -127,7 +136,7 @@
                 a top-level directory named <filename>adt-installer</filename>:
                 <literallayout class='monospaced'>
      $ cd ~
-     $ cp ~/poky/build/tmp/deploy/sdk/adt_installer.tar.bz2 $HOME
+     $ cp poky/build/tmp/deploy/sdk/adt_installer.tar.bz2 $HOME
      $ tar -xjf adt_installer.tar.bz2
                 </literallayout>
                 Unpacking it creates the directory <filename>adt-installer</filename>,
@@ -197,7 +206,7 @@
                 When you run the installer, the environment must use a
                 host <filename>gcc</filename>:
                 <literallayout class='monospaced'>
-     $ cd ~/adt-installer
+     $ cd adt-installer
      $ ./adt_installer
                 </literallayout>
                 Once the installer begins to run, you are asked to enter the
@@ -268,7 +277,7 @@
                             target, go into the <filename>x86_64</filename>
                             folder and download the following installer:
                             <literallayout class='monospaced'>
-     poky-eglibc-x86_64-core-image-sato-i586-&DISTRO;.sh
+     poky-eglibc-x86_64-core-image-sato-i586-toolchain-&DISTRO;.sh
                             </literallayout></para></listitem>
                         <listitem><para>Build your own toolchain installer.
                             For cases where you cannot use an installer
@@ -279,27 +288,32 @@
                     </itemizedlist></para></listitem>
                 <listitem><para>Once you have the installer, run it to install
                     the toolchain.
-                    You must change the permissions on the toolchain installer
-                    script so that it is executable.</para>
+                    <note>
+                        You must change the permissions on the toolchain
+                        installer script so that it is executable.
+                    </note></para>
                     <para>The following command shows how to run the installer
                     given a toolchain tarball for a 64-bit x86 development host
                     system and a 32-bit x86 target architecture.
                     The example assumes the toolchain installer is located
                     in <filename>~/Downloads/</filename>.
                     <literallayout class='monospaced'>
-     $ ~/Downloads/poky-eglibc-x86_64-core-image-sato-i586-&DISTRO;.sh
+     $ ~/Downloads/poky-eglibc-x86_64-core-image-sato-i586-toolchain-&DISTRO;.sh
                     </literallayout>
-                    <note>
-                        If you do not have write permissions for the directory
-                        into which you are installing the toolchain, the
-                        toolchain installer notifies you and exits.
-                        Be sure you have write permissions in the directory and
-                        run the installer again.
-                    </note>
-                    Once the tarball is expanded, the cross-toolchain is
+                    The first thing the installer prompts you for is the
+                    directory into which you want to install the toolchain.
+                    The default directory used is
+                    <filename>/opt/poky/&DISTRO;</filename>.
+                    If you do not have write permissions for the directory
+                    into which you are installing the toolchain, the
+                    toolchain installer notifies you and exits.
+                    Be sure you have write permissions in the directory and
+                    run the installer again.</para>
+                    <para>When the script finishes, the cross-toolchain is
                     installed.
                     You will notice environment setup files for the
-                    cross-toolchain in the directory.</para></listitem>
+                    cross-toolchain in the installation directory.
+                    </para></listitem>
             </orderedlist>
         </para>
     </section>
@@ -320,37 +334,43 @@
         <para>
             Follow these steps to generate the toolchain into the Build Directory:
             <orderedlist>
-                <listitem><para>Source the environment setup script
-                    <filename>&OE_INIT_FILE;</filename> located in the
+                <listitem><para><emphasis>Set up the Build Environment:</emphasis>
+                    Source the OpenEmbedded build environment setup
+                    script (i.e.
+                    <ulink url='&YOCTO_DOCS_REF_URL;#structure-core-script'><filename>&OE_INIT_FILE;</filename></ulink>
+                    or
+                    <ulink url='&YOCTO_DOCS_REF_URL;#structure-memres-core-script'><filename>oe-init-build-env-memres</filename></ulink>)
+                    located in the
                     <ulink url='&YOCTO_DOCS_DEV_URL;#source-directory'>Source Directory</ulink>.
                     </para></listitem>
-                <listitem><para>At this point, you should be sure that the
+                <listitem><para><emphasis>Check your Local Configuration File:</emphasis>
+                    At this point, you should be sure that the
                     <ulink url='&YOCTO_DOCS_REF_URL;#var-MACHINE'><filename>MACHINE</filename></ulink> variable
                     in the <filename>local.conf</filename> file found in the
                     <filename>conf</filename> directory of the Build Directory
                     is set for the target architecture.
-                    Comments within the <filename>local.conf</filename> file list the values you
-                    can use for the <filename>MACHINE</filename> variable.
-                    <note>You can populate the Build Directory with the cross-toolchains for more
-                        than a single architecture.
-                        You just need to edit the <filename>MACHINE</filename> variable in the
-                        <filename>local.conf</filename> file and re-run the BitBake
-                        command.</note></para></listitem>
-                <listitem><para>Run <filename>bitbake meta-ide-support</filename> to complete the
-                    cross-toolchain generation.
-                    <note>If you change out of your working directory after you
-                        <filename>source</filename> the environment setup script and before you run
-                        the BitBake command, the command might not work.
-                        Be sure to run the BitBake command immediately
-                        after checking or editing the <filename>local.conf</filename> but without
-                        changing out of your working directory.</note>
-                    Once the BitBake command finishes,
-                    the cross-toolchain is generated and populated within the Build Directory.
-                    You will notice environment setup files for the cross-toolchain in the
-                    Build Directory in the <filename>tmp</filename> directory.
-                    Setup script filenames contain the strings <filename>environment-setup</filename>.</para>
-                    <para>Be aware that when you use this method to install the toolchain you still need
-                    to separately extract and install the sysroot filesystem.
+                    Comments within the <filename>local.conf</filename> file
+                    list the values you can use for the
+                    <filename>MACHINE</filename> variable.
+                    <note>
+                        You can populate the Build Directory with the
+                        cross-toolchains for more than a single architecture.
+                        You just need to edit the <filename>MACHINE</filename>
+                        variable in the <filename>local.conf</filename> file and
+                        re-run the BitBake command.
+                    </note></para></listitem>
+                <listitem><para><emphasis>Generate the Cross-Toolchain:</emphasis>
+                    Run <filename>bitbake meta-ide-support</filename> to
+                    complete the cross-toolchain generation.
+                    Once the BitBake command finishes, the cross-toolchain is
+                    generated and populated within the Build Directory.
+                    You will notice environment setup files for the
+                    cross-toolchain that contain the string
+                    "<filename>environment-setup</filename>" in the
+                    Build Directory's <filename>tmp</filename> folder.</para>
+                    <para>Be aware that when you use this method to install the
+                    toolchain, you still need to separately extract and install
+                    the sysroot filesystem.
                     For information on how to do this, see the
                     "<link linkend='extracting-the-root-filesystem'>Extracting the Root Filesystem</link>" section.
                     </para></listitem>
@@ -437,8 +457,8 @@
             application from within the
             Eclipse IDE, you must have an image that contains the Yocto Target Communication
             Framework (TCF) agent (<filename>tcf-agent</filename>).
-            By default, the Yocto Project provides only one type pre-built image that contains the
-            <filename>tcf-agent</filename>.
+            By default, the Yocto Project provides only one type of pre-built
+            image that contains the <filename>tcf-agent</filename>.
             And, those images are SDK (e.g.<filename>core-image-sato-sdk</filename>).
         </para>
 
@@ -467,13 +487,16 @@
                             the following commands:
                             <literallayout class='monospaced'>
      $ git clone http://git.eclipse.org/gitroot/tcf/org.eclipse.tcf.agent.git
-     $ cd agent
+     $ cd org.eclipse.tcf.agent/agent
                             </literallayout></para></listitem>
-                        <listitem><para>Modify the <filename>Makefile.inc</filename> file
+                        <listitem><para>Locate the
+                            <filename>Makefile.inc</filename> file inside the
+                            <filename>agent</filename> folder and modify it
                             for the cross-compilation environment by setting the
                             <filename>OPSYS</filename> and
                             <ulink url='&YOCTO_DOCS_REF_URL;#var-MACHINE'><filename>MACHINE</filename></ulink>
-                            variables according to your target.</para></listitem>
+                            variables according to your target.
+                            </para></listitem>
                         <listitem><para>Use the cross-development tools to build the
                             <filename>tcf-agent</filename>.
                             Before you "Make" the file, be sure your cross-tools are set up first.
@@ -493,32 +516,63 @@
         <title>Extracting the Root Filesystem</title>
 
         <para>
-            You must extract the root filesystem if you want to boot the image using NFS
-            or you want to use the root filesystem as the target sysroot.
-            For example, the Eclipse IDE environment with the Eclipse Yocto Plug-in installed allows you
-            to use QEMU to boot under NFS.
-            Another example is if you want to develop your target application using the
-            root filesystem as the target sysroot.
+            If you install your toolchain by hand or build it using BitBake and
+            you need a root filesystem, you need to extract it separately.
+            If you use the ADT Installer to install the ADT, the root
+            filesystem is automatically extracted and installed.
+        </para>
+
+        <para>
+            Here are some cases where you need to extract the root filesystem:
+            <itemizedlist>
+                <listitem><para>You want to boot the image using NFS.
+                    </para></listitem>
+                <listitem><para>You want to use the root filesystem as the
+                    target sysroot.
+                    For example, the Eclipse IDE environment with the Eclipse
+                    Yocto Plug-in installed allows you to use QEMU to boot
+                    under NFS.</para></listitem>
+                <listitem><para>You want to develop your target application
+                    using the root filesystem as the target sysroot.
+                    </para></listitem>
+            </itemizedlist>
         </para>
 
         <para>
             To extract the root filesystem, first <filename>source</filename>
-            the cross-development environment setup script and then
-            use the <filename>runqemu-extract-sdk</filename> command on the
+            the cross-development environment setup script.
+            If you built the toolchain in the Build Directory, you will find
+            the toolchain environment script in the
+            <filename>tmp</filename> directory.
+            If you installed the toolchain by hand, the environment setup
+            script is located in <filename>/opt/poky/&DISTRO;</filename>.
+        </para>
+
+        <para>
+            After sourcing the environment script, use the
+            <filename>runqemu-extract-sdk</filename> command and provide the
             filesystem image.
-            For example, the following commands set up the environment and then extract
-            the root filesystem from a previously built filesystem image tarball named
-            <filename>core-image-sato-sdk-qemux86-2011091411831.rootfs.tar.bz2</filename>.
-            The example extracts the root filesystem into the <filename>$HOME/qemux86-sato</filename>
-            directory:
+        </para>
+
+        <para>
+            Following is an example.
+            The second command sets up the environment.
+            In this case, the setup script is located in the
+            <filename>/opt/poky/&DISTRO;</filename> directory.
+            The third command extracts the root filesystem from a previously
+            built filesystem that is located in the
+            <filename>~/Downloads</filename> directory.
+            Furthermore, this command extracts the root filesystem into the
+            <filename>qemux86-sato</filename> directory:
             <literallayout class='monospaced'>
-     $ source $HOME/toolchain_dir/environment-setup-i586-poky-linux
+     $ cd ~
+     $ source /opt/poky/&DISTRO;/environment-setup-i586-poky-linux
      $ runqemu-extract-sdk \
-        ~Downloads/core-image-sato-sdk-qemux86-2011091411831.rootfs.tar.bz2 \
+        ~/Downloads/core-image-sato-sdk-qemux86-2011091411831.rootfs.tar.bz2 \
         $HOME/qemux86-sato
             </literallayout>
-            In this case, you could now point to the target sysroot at
-            <filename>$HOME/qemux86-sato</filename>.
+            You could now point to the target sysroot at
+            <filename>qemux86-sato</filename>.
         </para>
     </section>
 </section>
@@ -528,30 +582,26 @@
 
     <para>
         As an alternative to locating and downloading a toolchain installer,
-        you can build the toolchain installer if you have a
-        <ulink url='&YOCTO_DOCS_DEV_URL;#build-directory'>Build Directory</ulink>.
+        you can build the toolchain installer one of two ways if you have a
+        <ulink url='&YOCTO_DOCS_DEV_URL;#build-directory'>Build Directory</ulink>:
+        <itemizedlist>
+            <listitem><para>Use <filename>bitbake meta-toolchain</filename>.
+                This method requires you to still install the target
+                sysroot by installing and extracting it separately.
+                For information on how to install the sysroot, see the
+                "<link linkend='extracting-the-root-filesystem'>Extracting the Root Filesystem</link>"
+                section.</para></listitem>
+            <listitem><para>Use
+                <filename>bitbake image -c populate_sdk</filename>.
+                This method has significant advantages over the previous method
+                because it results in a toolchain installer that contains the
+                sysroot that matches your target root filesystem.
+                </para></listitem>
+        </itemizedlist>
     </para>
 
     <para>
-        You can build the toolchain
-        installer using <filename>bitbake meta-toolchain</filename>.
-        This method requires you to still install the target
-        sysroot by installing and extracting it separately.
-        For information on how to install the sysroot, see the
-        "<link linkend='extracting-the-root-filesystem'>Extracting the Root Filesystem</link>" section.
-    </para>
-
-    <para>
-        A final method of building the toolchain installer exists that has
-        significant advantages over the previous method.
-        This method results in a toolchain installer that contains the sysroot
-        that matches your target root filesystem.
-        To build this installer, use the
-        <filename>bitbake image -c populate_sdk</filename> command.
-    </para>
-
-    <para>
-         Remember, before using any <filename>bitbake</filename> command, you
+         Remember, before using any BitBake command, you
          must source the build environment setup script
          (i.e.
          <ulink url='&YOCTO_DOCS_REF_URL;#structure-core-script'><filename>&OE_INIT_FILE;</filename></ulink>
@@ -567,12 +617,27 @@
          variable is correctly set if you are building a toolchain designed to
          run on an architecture that differs from your current development host
          machine (i.e. the build machine).
-     </para>
+    </para>
 
-     <para>
-         When the BitBake command completes, the toolchain installer will be in
-         <filename>tmp/deploy/sdk</filename> in the Build Directory.
-     </para>
+    <para>
+        When the BitBake command completes, the toolchain installer will be in
+        <filename>tmp/deploy/sdk</filename> in the Build Directory.
+        <note>
+            By default, this toolchain does not build static binaries.
+            If you want to use the toolchain to build these types of libraries,
+            you need to be sure your image has the appropriate static
+            development libraries.
+            Use the
+            <ulink url='&YOCTO_DOCS_REF_URL;#var-IMAGE_INSTALL'><filename>IMAGE_INSTALL</filename></ulink>
+            variable inside your <filename>local.conf</filename> file to
+            install the appropriate library packages.
+            Following is an example using <filename>eglibc</filename> static
+            development libraries:
+            <literallayout class='monospaced'>
+     IMAGE_INSTALL_append = " eglibc-staticdev"
+            </literallayout>
+        </note>
+    </para>
 </section>
 
 </chapter>

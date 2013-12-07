@@ -10,7 +10,8 @@ DEPENDS = "expat virtual/libintl ${@base_contains('DISTRO_FEATURES', 'x11', '${X
 DEPENDS_class-native = "expat-native virtual/libintl-native"
 DEPENDS_class-nativesdk = "nativesdk-expat virtual/nativesdk-libintl"
 RDEPENDS_dbus = "${@base_contains('DISTRO_FEATURES', 'ptest', 'dbus-ptest-ptest', '', d)}"
-RDEPENDS_class-native = ""
+RDEPENDS_dbus_class-native = ""
+RDEPENDS_dbus_class-nativesdk = ""
 
 INC_PR = "r6"
 
@@ -26,8 +27,7 @@ INITSCRIPT_NAME = "dbus-1"
 INITSCRIPT_PARAMS = "start 02 5 3 2 . stop 20 0 1 6 ."
 
 python __anonymous() {
-    features = d.getVar("DISTRO_FEATURES", True).split()
-    if "sysvinit" not in features:
+    if not oe.utils.contains('DISTRO_FEATURES', 'sysvinit', True, False, d):
         d.setVar("INHIBIT_UPDATERCD_BBCLASS", "1")
 }
 

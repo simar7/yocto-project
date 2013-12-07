@@ -96,18 +96,19 @@ RDEPENDS_packagegroup-core-dev-utils = "\
 VIRTUAL-RUNTIME_initscripts ?= "initscripts"
 VIRTUAL-RUNTIME_init_manager ?= "sysvinit"
 VIRTUAL-RUNTIME_login_manager ?= "busybox"
+VIRTUAL-RUNTIME_syslog ?= "sysklogd"
 RDEPENDS_packagegroup-core-initscripts = "\
     ${VIRTUAL-RUNTIME_initscripts} \
     ${VIRTUAL-RUNTIME_init_manager} \
     ethtool \
     ${VIRTUAL-RUNTIME_login_manager} \
-    sysklogd \
+    ${VIRTUAL-RUNTIME_syslog} \
     "
 
 RDEPENDS_packagegroup-core-multiuser = "\
     cracklib \
     gzip \
-    libuser \
+    ${@base_contains('DISTRO_FEATURES', 'pam', 'libuser', '', d)} \
     shadow \
     sudo \
     "

@@ -7,7 +7,9 @@ SRC_URI = "file://aclocal.tgz \
            file://config.rpath \
            file://Makefile.in.in \
            file://remove-potcdate.sin \
-           file://COPYING"
+           file://COPYING \
+           file://iconv-m4-remove-the-test-to-convert-euc-jp.patch \
+"
 
 INHIBIT_DEFAULT_DEPS = "1"
 INHIBIT_AUTOTOOLS_DEPS = "1"
@@ -17,7 +19,6 @@ LIC_FILES_CHKSUM = "file://COPYING;md5=0854da868a929923087141d9d7aba7d5"
 
 inherit native
 
-PR = "r0"
 
 S = "${WORKDIR}"
 

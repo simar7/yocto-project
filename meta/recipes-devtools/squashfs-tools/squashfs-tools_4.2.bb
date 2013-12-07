@@ -1,9 +1,8 @@
 # Note, we can probably remove the lzma option as it has be replaced with xz,
 # and I don't think the kernel supports it any more.
-DESCRIPTION = "Tools to manipulate Squashfs filesystems."
+SUMMARY = "Tools for manipulating SquashFS filesystems"
 SECTION = "base"
 LICENSE = "GPL-2 & PD"
-FILESEXTRAPATHS_prepend := "${THISDIR}/patches:"
 LIC_FILES_CHKSUM = "file://../COPYING;md5=0636e73ff0215e8d672dc4c32c317bb3 \
                     file://../../7zC.txt;beginline=12;endline=16;md5=2056cd6d919ebc3807602143c7449a7c \
                    "
@@ -37,9 +36,6 @@ do_install () {
         install -d ${D}${sbindir}
         install -m 0755 mksquashfs ${D}${sbindir}/
 }
-
-# required to share same place with -lzma specific packages
-FILESPATHPKG =. "squashfs-tools-${PV}:"
 
 ARM_INSTRUCTION_SET = "arm"
 

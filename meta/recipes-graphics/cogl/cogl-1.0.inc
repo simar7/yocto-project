@@ -2,10 +2,6 @@ DESCRIPTION = "a modern 3D graphics API with associated utility APIs"
 HOMEPAGE = "http://wiki.clutter-project.org/wiki/Cogl"
 LICENSE = "LGPLv2.1+"
 
-SRC_URI += "file://cogl_fixed_mul-constraint.patch \
-            file://cogl-fixed-thumb.patch \
-            "
-
 inherit clutter
 
 DEPENDS = "glib-2.0 gdk-pixbuf"
@@ -21,7 +17,7 @@ EDEPENDS_GLES2 = "virtual/libgles2"
 EDEPENDS_KMS = "libdrm virtual/egl"
 EDEPENDS_EGL = "virtual/egl"
 EDEPENDS_X11 = "virtual/libx11 libxcomposite libxfixes libxi libxrandr"
-EDEPENDS_WAYLAND = "wayland"
+EDEPENDS_WAYLAND = "virtual/mesa wayland"
 
 # Extra RDEPENDS for PACKAGECONFIG
 # This has to be explictly listed, because cogl dlopens the backends
@@ -33,6 +29,7 @@ EXTRA_OECONF += "--disable-introspection	\
 	       	 --enable-examples-install	\
 	       	 --enable-debug		 	\
 	       	 --disable-gles1		\
+	         --disable-cairo                \
 	    	"
 
 # OpenGL/GLX

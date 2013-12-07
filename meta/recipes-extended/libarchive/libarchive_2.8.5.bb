@@ -1,19 +1,19 @@
+SUMMARY = "Support for reading various archive formats"
 DESCRIPTION = "C library and command-line tools for reading and writing tar, cpio, zip, ISO, and other archive formats"
-HOMEPAGE = "http://code.google.com/p/libarchive/"
+HOMEPAGE = "http://www.libarchive.org/"
 SECTION = "devel"
 LICENSE = "BSD"
 LIC_FILES_CHKSUM = "file://COPYING;md5=4255e2e6f0349a4ac8fbd68459296e46"
-PR = "r0"
 
 PACKAGECONFIG ?= "libxml2 zlib bz2"
 
-PACKAGECONFIG_class-target += "\
+PACKAGECONFIG_append_class-target = "\
 	${@base_contains('DISTRO_FEATURES', 'acl', 'acl', '', d)} \
 	${@base_contains('DISTRO_FEATURES', 'xattr', 'xattr', '', d)} \
 	${@base_contains('DISTRO_FEATURES', 'largefile', 'largefile', '', d)} \
 "
 
-PACKAGECONFIG_class-nativesdk += "largefile"
+PACKAGECONFIG_append_class-nativesdk = " largefile"
 
 PACKAGECONFIG[acl] = "--enable-acl,--disable-acl,acl,"
 PACKAGECONFIG[xattr] = "--enable-xattr,--disable-xattr,attr,"

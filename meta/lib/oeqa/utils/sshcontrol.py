@@ -9,11 +9,12 @@
 import subprocess
 import time
 import os
+import select
 
 class SSHControl(object):
 
-    def __init__(self, host=None, timeout=300, logfile=None):
-        self.host = host
+    def __init__(self, ip=None, timeout=300, logfile=None):
+        self.ip = ip
         self.timeout = timeout
         self._starttime = None
         self._out = ''
@@ -34,7 +35,7 @@ class SSHControl(object):
     def _internal_run(self, cmd):
         # We need this for a proper PATH
         cmd = ". /etc/profile; " + cmd
-        command = self.ssh + [self.host, cmd]
+        command = self.ssh + [self.ip, cmd]
         self.log("[Running]$ %s" % " ".join(command))
         self._starttime = time.time()
         # ssh hangs without os.setsid
@@ -47,35 +48,47 @@ class SSHControl(object):
         if time is 0 will let cmd run until it finishes.
         Time can be passed to here or can be set per class instance."""
 
-        if self.host:
+        if self.ip:
             sshconn = self._internal_run(cmd)
         else:
-            raise Exception("Remote IP hasn't been set: '%s'" % actualcmd)
+            raise Exception("Remote IP hasn't been set, I can't run ssh without one.")
 
+        # run the command forever
         if timeout == 0:
-            self._out = sshconn.communicate()[0]
-            self._ret = sshconn.poll()
+            output = sshconn.communicate()[0]
         else:
+            # use the default timeout
             if timeout is None:
                 tdelta = self.timeout
+            # use the specified timeout
             else:
                 tdelta = timeout
             endtime = self._starttime + tdelta
-            while sshconn.poll() is None and time.time() < endtime:
-                time.sleep(1)
+            output = ''
+            eof = False
+            while time.time() < endtime and not eof:
+                if select.select([sshconn.stdout], [], [], 5)[0] != []:
+                    data = os.read(sshconn.stdout.fileno(), 1024)
+                    if not data:
+                        sshconn.stdout.close()
+                        eof = True
+                    else:
+                        output += data
+                        endtime = time.time() + tdelta
+
             # process hasn't returned yet
             if sshconn.poll() is None:
-                self._ret = 255
                 sshconn.terminate()
-                sshconn.kill()
-                self._out = sshconn.stdout.read()
-                sshconn.stdout.close()
-                self._out += "\n[!!! SSH command timed out after %d seconds and it was killed]" % tdelta
-            else:
-                self._out = sshconn.stdout.read()
-                self._ret = sshconn.poll()
+                time.sleep(3)
+                try:
+                    sshconn.kill()
+                except OSError:
+                    pass
+                output += "\n[!!! SSH command killed - no output for %d seconds. Total running time: %d seconds." % (tdelta, time.time() - self._starttime)
+
+        self._ret = sshconn.poll()
         # strip the last LF so we can test the output
-        self._out = self._out.rstrip()
+        self._out = output.rstrip()
         self.log("%s" % self._out)
         self.log("[SSH command returned after %d seconds]: %s" % (time.time() - self._starttime, self._ret))
         return (self._ret, self._out)
@@ -95,15 +108,9 @@ class SSHControl(object):
         return (ret, out)
 
     def copy_to(self, localpath, remotepath):
-        actualcmd = [localpath, 'root@%s:%s' % (self.host, remotepath)]
+        actualcmd = [localpath, 'root@%s:%s' % (self.ip, remotepath)]
         return self._internal_scp(actualcmd)
 
     def copy_from(self, remotepath, localpath):
-        actualcmd = ['root@%s:%s' % (self.host, remotepath), localpath]
+        actualcmd = ['root@%s:%s' % (self.ip, remotepath), localpath]
         return self._internal_scp(actualcmd)
-
-    def get_status(self):
-        return self._ret
-
-    def get_output(self):
-        return self._out

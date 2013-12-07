@@ -17,11 +17,10 @@
                 the terms of the <ulink type="http" url="http://creativecommons.org/licenses/by-sa/2.0/uk/">Creative Commons Attribution-Share Alike 2.0 UK: England &amp; Wales</ulink> as published by Creative Commons.
             </para>
             <note>
-                Due to production processes, there could be differences between the Yocto Project
-                documentation bundled in the release tarball and the
-                <ulink url='&YOCTO_DOCS_QS_URL;'>Yocto Project Quick Start</ulink> on
-                the <ulink url='&YOCTO_HOME_URL;'>Yocto Project</ulink> website.
-                For the latest version of this manual, see the manual on the website.
+                For the latest version of this manual associated with this
+                Yocto Project release, see the
+                <ulink url='&YOCTO_DOCS_QS_URL;'>Yocto Project Quick Start</ulink>
+                from the Yocto Project website.
             </note>
         </legalnotice>
 
@@ -232,11 +231,6 @@
                 distributions listed in the
                 "<ulink url='&YOCTO_DOCS_REF_URL;#detailed-supported-distros'>Supported Linux Distributions</ulink>"
                 section of the Yocto Project Reference Manual.
-                Refer to
-                <ulink url='&OE_HOME_URL;/index.php?title=OEandYourDistro'>OE and Your Distro</ulink> and
-                <ulink url='&OE_HOME_URL;/index.php?title=Required_software'>Required Software</ulink>
-                for information for information about dependencies and
-                requirements.
                 If you encounter problems, please go to
                 <ulink url='&YOCTO_BUGZILLA_URL;'>Yocto Project Bugzilla</ulink>
                 and submit a bug.
@@ -415,9 +409,9 @@
 
          <para>
              <literallayout class='monospaced'>
-     $ wget &YOCTO_POKY_DL_URL;
-     $ tar xjf &YOCTO_POKY;.tar.bz2
-     $ cd &YOCTO_POKY;
+     $ git clone &YOCTO_GIT_URL;/git/poky
+     $ cd poky
+     $ git checkout -b &DISTRO_NAME; origin/&DISTRO_NAME;
      $ source &OE_INIT_FILE;
              </literallayout>
          </para>
@@ -434,30 +428,31 @@
          </para></tip>
 
          <itemizedlist>
-             <listitem><para>In the previous example, the first command retrieves the Yocto Project
-                 release tarball from the source repositories using the
-                 <filename>wget</filename> command.
-                 Alternatively, you can go to the
-                 <ulink url='&YOCTO_HOME_URL;'>Yocto Project website's</ulink>
-                 "Downloads" page to retrieve the tarball.</para></listitem>
-             <listitem><para>The second command extracts the files from the tarball and places
-                 them into a directory named <filename>&YOCTO_POKY;</filename> in the current
-                 directory.</para></listitem>
-             <listitem><para>The third and fourth commands change the working directory to the
-                 <ulink url='&YOCTO_DOCS_DEV_URL;#source-directory'>Source Directory</ulink>
-                 and run the Yocto Project
+             <listitem><para>In the previous example, the first command uses
+                 <ulink url='&YOCTO_DOCS_DEV_URL;#git'>Git</ulink> to create
+                 a local repository named <filename>poky</filename> that is a
+                 clone of the upstream Yocto Project
+                 <filename>poky</filename> repository.</para></listitem>
+             <listitem><para>The third command checks out a local branch and
+                 names it <filename>&DISTRO_NAME;</filename>.
+                 The local branch tracks the upstream branch of the same name.
+                 Creating your own branch based on the released branch ensures
+                 you are using the latest files for that release.
+                 </para></listitem>
+             <listitem><para>The final command runs the Yocto Project
                  <ulink url='&YOCTO_DOCS_REF_URL;#structure-core-script'><filename>&OE_INIT_FILE;</filename></ulink>
                  environment setup script.
-                 Running this script defines OpenEmbedded build environment settings needed to
-                 complete the build.
+                 Running this script defines OpenEmbedded build environment
+                 settings needed to complete the build.
                  The script also creates the
                  <ulink url='&YOCTO_DOCS_DEV_URL;#build-directory'>Build Directory</ulink>,
-                 which is <filename>build</filename> in this case and is located in the
-                 Source Directory.
+                 which is <filename>build</filename> in this case and is located
+                 in the
+                 <ulink url='&YOCTO_DOCS_DEV_URL;#source-directory'>Source Directory</ulink>.
                  After the script runs, your current working directory is set
                  to the Build Directory.
-                 Later, when the build completes, the Build Directory contains all the files
-                 created during the build.
+                 Later, when the build completes, the Build Directory contains
+                 all the files created during the build.
                  <note>
                      For information on running a memory-resident BitBake, see
                      the
@@ -591,7 +586,7 @@
             </para>
 
             <literallayout class='monospaced'>
-     poky-eglibc-&lt;<emphasis>host_system</emphasis>&gt;-&lt;<emphasis>image_type</emphasis>&gt;-&lt;<emphasis>arch</emphasis>&gt;-&lt;<emphasis>release_version</emphasis>&gt;.sh
+     poky-eglibc-&lt;<emphasis>host_system</emphasis>&gt;-&lt;<emphasis>image_type</emphasis>&gt;-&lt;<emphasis>arch</emphasis>&gt;-toolchain-&lt;<emphasis>release_version</emphasis>&gt;.sh
 
      Where:
          &lt;<emphasis>host_system</emphasis>&gt; is a string representing your development system:
@@ -620,7 +615,7 @@
                 development host system and a i586-tuned target architecture
                 based off the SDK for <filename>core-image-sato</filename>:
                 <literallayout class='monospaced'>
-     poky-eglibc-x86_64-core-image-sato-i586-&DISTRO;.sh
+     poky-eglibc-x86_64-core-image-sato-i586-toolchain-&DISTRO;.sh
                 </literallayout>
             </para>
 
@@ -649,7 +644,7 @@
 
             <para>
                 <literallayout class='monospaced'>
-     $ ~/Downloads/poky-eglibc-x86_64-core-image-sato-i586-&DISTRO;.sh
+     $ ~/Downloads/poky-eglibc-x86_64-core-image-sato-i586-toolchain-&DISTRO;.sh
                 </literallayout>
             </para>
 
@@ -722,11 +717,6 @@
          &lt;<emphasis>arch</emphasis>&gt; is a string representing the target architecture:
                 x86, x86-64, ppc, mips, or arm.
                 </literallayout>
-                <note>
-                    For the <filename>qemu</filename> architecture,
-                    <filename>ext3</filename> and <filename>tar</filename>
-                    files start with the "lib32" string.
-                </note>
             </para>
         </section>
 
@@ -809,29 +799,23 @@
         </footnote>
         gives you a minimal description of how to use the Yocto Project to build images
         for a BeagleBoard xM starting from scratch.
-        The steps were performed on a 64-bit Ubuntu 10.04 system.
+        The steps were performed on a 64-bit Ubuntu 12.04 system.
     </para>
 
     <section id='getting-yocto'>
         <title>Getting the Yocto Project</title>
 
         <para>
-            Set up your <ulink url='&YOCTO_DOCS_DEV_URL;#source-directory'>Source Directory</ulink>
-            one of two ways:
-            <itemizedlist>
-                <listitem><para><emphasis>Tarball:</emphasis>
-                    Use if you want the latest stable release:
-                    <literallayout class='monospaced'>
-     $ wget &YOCTO_RELEASE_DL_URL;/&YOCTO_POKY_TARBALL;
-     $ tar xvjf &YOCTO_POKY_TARBALL;
-                    </literallayout></para></listitem>
-                <listitem><para><emphasis>Git Repository:</emphasis>
-                    Use if you want to work with cutting edge development content:
-                    <literallayout class='monospaced'>
+            Set up your
+            <ulink url='&YOCTO_DOCS_DEV_URL;#source-directory'>Source Directory</ulink>
+            by using Git to clone the <filename>poky</filename> poky
+            repository and then check out the release branch:
+            <literallayout class='monospaced'>
+     $ cd ~
      $ git clone git://git.yoctoproject.org/poky
-                    </literallayout></para></listitem>
-            </itemizedlist>
-            The remainder of the section assumes the Git repository method.
+     $ cd poky
+     $ git checkout -b &DISTRO_NAME; origin/&DISTRO_NAME;
+            </literallayout>
         </para>
     </section>
 
@@ -840,7 +824,8 @@
 
         <para>
             You need some packages for everything to work.
-            Rather than duplicate them here, look at the "<link linkend='packages'>The Packages</link>"
+            Rather than duplicate them here, look at the
+            "<link linkend='packages'>The Packages</link>"
             section earlier in this quick start.
         </para>
     </section>
@@ -849,17 +834,18 @@
         <title>Initializing the Build Environment</title>
 
         <para>
-            From the parent directory your
+            From the root directory of your
             <ulink url='&YOCTO_DOCS_DEV_URL;#source-directory'>Source Directory</ulink>,
             initialize your environment and provide a meaningful
             <ulink url='&YOCTO_DOCS_DEV_URL;#build-directory'>Build Directory</ulink>
             name:
             <literallayout class='monospaced'>
-     $ source poky/&OE_INIT_FILE; mybuilds
+     $ source &OE_INIT_FILE; mybuilds
             </literallayout>
-            At this point, the <filename>mybuilds</filename> directory has been created for you
-            and it is now your current working directory.
-            If you don't provide your own directory name it defaults to <filename>build</filename>,
+            At this point, the <filename>mybuilds</filename> directory has
+            been created for you and it is now your current working directory.
+            If you don't provide your own directory name,
+            it defaults to <filename>build</filename>,
             which is inside the Source Directory.
         </para>
     </section>
@@ -868,18 +854,21 @@
         <title>Configuring the local.conf File</title>
 
         <para>
-            Initializing the build environment creates a <filename>conf/local.conf</filename> configuration file
+            Initializing the build environment creates a
+            <filename>conf/local.conf</filename> configuration file
             in the Build Directory.
-            You need to manually edit this file to specify the machine you are building and to optimize
-            your build time.
+            You need to manually edit this file to specify the machine you
+            are building and to optimize your build time.
             Here are the minimal changes to make:
             <literallayout class='monospaced'>
      BB_NUMBER_THREADS = "8"
      PARALLEL_MAKE = "-j 8"
      MACHINE ?= "beagleboard"
             </literallayout>
-            Briefly, set <ulink url='&YOCTO_DOCS_REF_URL;#var-BB_NUMBER_THREADS'><filename>BB_NUMBER_THREADS</filename></ulink>
-            and <ulink url='&YOCTO_DOCS_REF_URL;#var-PARALLEL_MAKE'><filename>PARALLEL_MAKE</filename></ulink> to
+            Briefly, set
+            <ulink url='&YOCTO_DOCS_REF_URL;#var-BB_NUMBER_THREADS'><filename>BB_NUMBER_THREADS</filename></ulink>
+            and
+            <ulink url='&YOCTO_DOCS_REF_URL;#var-PARALLEL_MAKE'><filename>PARALLEL_MAKE</filename></ulink> to
             twice your host processor's number of cores.
         </para>
 
@@ -929,9 +918,10 @@
         <title>Building the Image</title>
 
         <para>
-            At this point, you need to select an image to build for the BeagleBoard xM.
-            If this is your first build using the Yocto Project, you should try the smallest and simplest
-            image:
+            At this point, you need to select an image to build for the
+            BeagleBoard xM.
+            If this is your first build using the Yocto Project, you should try
+            the smallest and simplest image:
             <literallayout class='monospaced'>
      $ bitbake core-image-minimal
             </literallayout>
@@ -941,15 +931,18 @@
         <para>
             Here are some variations on the build process that could be helpful:
             <itemizedlist>
-                <listitem><para>Fetch all the necessary sources without starting the build:
+                <listitem><para>Fetch all the necessary sources without starting
+                    the build:
                     <literallayout class='monospaced'>
      $ bitbake -c fetchall core-image-minimal
                     </literallayout>
-                    This variation guarantees that you have all the sources for that BitBake target
-                    should you disconnect from the net and want to do the build later offline.
-                    </para></listitem>
-                <listitem><para>Specify to continue the build even if BitBake encounters an error.
-                    By default, BitBake aborts the build when it encounters an error.
+                    This variation guarantees that you have all the sources for
+                    that BitBake target should you disconnect from the net and
+                    want to do the build later offline.</para></listitem>
+                <listitem><para>Specify to continue the build even if BitBake
+                    encounters an error.
+                    By default, BitBake aborts the build when it encounters an
+                    error.
                     This command keeps a faulty build going:
                     <literallayout class='monospaced'>
      $ bitbake -k core-image-minimal
@@ -958,7 +951,8 @@
         </para>
 
         <para>
-            Once you have your image, you can take steps to load and boot it on the target hardware.
+            Once you have your image, you can take steps to load and boot it on
+            the target hardware.
         </para>
     </section>
 </section>

@@ -73,7 +73,7 @@ class Git(FetchMethod):
     def init(self, d):
         pass
 
-    def supports(self, url, ud, d):
+    def supports(self, ud, d):
         """
         Check to see if a given url can be fetched with git.
         """
@@ -125,7 +125,7 @@ class Git(FetchMethod):
             if not ud.revisions[name] or len(ud.revisions[name]) != 40  or (False in [c in "abcdef0123456789" for c in ud.revisions[name]]):
                 if ud.revisions[name]:
                     ud.branches[name] = ud.revisions[name]
-                ud.revisions[name] = self.latest_revision(ud.url, ud, d, name)
+                ud.revisions[name] = self.latest_revision(ud, d, name)
 
         gitsrcname = '%s%s' % (ud.host.replace(':','.'), ud.path.replace('/', '.').replace('*', '.'))
         # for rebaseable git repo, it is necessary to keep mirror tar ball
@@ -142,21 +142,21 @@ class Git(FetchMethod):
 
         ud.localfile = ud.clonedir
 
-    def localpath(self, url, ud, d):
+    def localpath(self, ud, d):
         return ud.clonedir
 
-    def need_update(self, u, ud, d):
+    def need_update(self, ud, d):
         if not os.path.exists(ud.clonedir):
             return True
         os.chdir(ud.clonedir)
         for name in ud.names:
-            if not self._contains_ref(ud.revisions[name], d):
+            if not self._contains_ref(ud.revisions[name], ud.branches[name], d):
                 return True
         if ud.write_tarballs and not os.path.exists(ud.fullmirror):
             return True
         return False
 
-    def try_premirror(self, u, ud, d):
+    def try_premirror(self, ud, d):
         # If we don't do this, updating an existing checkout with only premirrors
         # is not possible
         if d.getVar("BB_FETCH_PREMIRRORONLY", True) is not None:
@@ -165,7 +165,7 @@ class Git(FetchMethod):
             return False
         return True
 
-    def download(self, loc, ud, d):
+    def download(self, ud, d):
         """Fetch url"""
 
         if ud.user:
@@ -197,7 +197,7 @@ class Git(FetchMethod):
         # Update the checkout if needed
         needupdate = False
         for name in ud.names:
-            if not self._contains_ref(ud.revisions[name], d):
+            if not self._contains_ref(ud.revisions[name], ud.branches[name], d):
                 needupdate = True
         if needupdate:
             try: 
@@ -213,8 +213,12 @@ class Git(FetchMethod):
             runfetchcmd("%s prune-packed" % ud.basecmd, d)
             runfetchcmd("%s pack-redundant --all | xargs -r rm" % ud.basecmd, d)
             ud.repochanged = True
+        os.chdir(ud.clonedir)
+        for name in ud.names:
+            if not self._contains_ref(ud.revisions[name], ud.branches[name], d):
+                raise bb.fetch2.FetchError("Unable to find revision %s in branch %s even from upstream" % (ud.revisions[name], ud.branches[name]))
 
-    def build_mirror_data(self, url, ud, d):
+    def build_mirror_data(self, ud, d):
         # Generate a mirror tarball if needed
         if ud.write_tarballs and (ud.repochanged or not os.path.exists(ud.fullmirror)):
             # it's possible that this symlink points to read-only filesystem with PREMIRROR
@@ -281,21 +285,24 @@ class Git(FetchMethod):
     def supports_srcrev(self):
         return True
 
-    def _contains_ref(self, tag, d):
+    def _contains_ref(self, tag, branch, d):
         basecmd = data.getVar("FETCHCMD_git", d, True) or "git"
-        cmd = "%s log --pretty=oneline -n 1 %s -- 2> /dev/null | wc -l" % (basecmd, tag)
-        output = runfetchcmd(cmd, d, quiet=True)
+        cmd =  "%s branch --contains %s --list %s 2> /dev/null | wc -l" % (basecmd, tag, branch)
+        try:
+            output = runfetchcmd(cmd, d, quiet=True)
+        except bb.fetch2.FetchError:
+            return False
         if len(output.split()) > 1:
             raise bb.fetch2.FetchError("The command '%s' gave output with more then 1 line unexpectedly, output: '%s'" % (cmd, output))
         return output.split()[0] != "0"
 
-    def _revision_key(self, url, ud, d, name):
+    def _revision_key(self, ud, d, name):
         """
         Return a unique key for the url
         """
         return "git:" + ud.host + ud.path.replace('/', '.') + ud.branches[name]
 
-    def _latest_revision(self, url, ud, d, name):
+    def _latest_revision(self, ud, d, name):
         """
         Compute the HEAD revision for the url
         """
@@ -311,14 +318,14 @@ class Git(FetchMethod):
             bb.fetch2.check_network_access(d, cmd)
         output = runfetchcmd(cmd, d, True)
         if not output:
-            raise bb.fetch2.FetchError("The command %s gave empty output unexpectedly" % cmd, url)
+            raise bb.fetch2.FetchError("The command %s gave empty output unexpectedly" % cmd, ud.url)
         return output.split()[0]
 
-    def _build_revision(self, url, ud, d, name):
+    def _build_revision(self, ud, d, name):
         return ud.revisions[name]
 
-    def checkstatus(self, uri, ud, d):
-        fetchcmd = "%s ls-remote %s" % (ud.basecmd, uri)
+    def checkstatus(self, ud, d):
+        fetchcmd = "%s ls-remote %s" % (ud.basecmd, ud.url)
         try:
             runfetchcmd(fetchcmd, d, quiet=True)
             return True

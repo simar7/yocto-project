@@ -155,10 +155,11 @@
                     For more information on BSP layers, see the
                     "<ulink url='&YOCTO_DOCS_BSP_URL;#bsp-layers'>BSP Layers</ulink>" section in the
                     Yocto Project Board Support Package (BSP) Developer's Guide.</para>
-                    <note>Four BSPs exist that are part of the
-                    Yocto Project release: <filename>genericx86</filename>, <filename>beagleboard</filename>,
+                    <note>Five BSPs exist that are part of the
+                    Yocto Project release: <filename>genericx86</filename>, <filename>genericx86-64</filename>,
+                    <filename>beagleboard</filename>,
                     <filename>mpc8315e</filename>, and <filename>routerstationpro</filename>.
-                    The recipes and configurations for these four BSPs are located and dispersed
+                    The recipes and configurations for these five BSPs are located and dispersed
                     within the <link linkend='source-directory'>Source Directory</link>.
                     On the other hand, BSP layers for Chief River, Crown Bay,
                     Crystal Forest, Emenlow, Fish River Island 2, Jasper Forest, N450, NUC DC3217IYE,
@@ -218,10 +219,10 @@
         <para>
             You can view a video presentation on "Building Custom Embedded Images with Yocto"
             at <ulink url='http://free-electrons.com/blog/elc-2011-videos'>Free Electrons</ulink>.
-            You can also find supplemental information in
+            You can also find supplemental information in the
             <ulink url='&YOCTO_DOCS_BSP_URL;'>
-            The Board Support Package (BSP) Development Guide</ulink>.
-            Finally, there is wiki page write up of the example also located
+            Yocto Project Board Support Package (BSP) Developer's Guide</ulink>.
+            Finally, there is a wiki page write up of the example also located
             <ulink url='&YOCTO_WIKI_URL;/wiki/Transcript:_creating_one_generic_Atom_BSP_from_another'>
             here</ulink> that you might find helpful.
        </para>
@@ -418,8 +419,9 @@
                         If you have never built the kernel you are interested in, you need to run
                         an initial build to establish local kernel source files.</para>
                         <para>If you are building an image for the first time, you need to get the build
-                        environment ready by sourcing
-                        the environment setup script.
+                        environment ready by sourcing an environment setup script
+                        (e.g. <filename>oe-init-build-env</filename> or
+                        <filename>oe-init-build-env-memres</filename>).
                         You also need to be sure two key configuration files
                         (<filename>local.conf</filename> and <filename>bblayers.conf</filename>)
                         are configured appropriately.</para>
@@ -1424,9 +1426,6 @@
                         "<ulink url='&YOCTO_DOCS_PROF_URL;#profile-manual-perf'>perf</ulink>"
                         section in the Yocto Project Profiling and Tracing
                         Manual.
-                        For information on LatencyTOP, see the
-                        <ulink url='https://latencytop.org/'>LatencyTOP</ulink>
-                        website.
                         </para></listitem>
                 </itemizedlist>
             </para>
@@ -1470,7 +1469,14 @@
                             the "Clone from Yocto Git Repository" box, which
                             would execute a <filename>git clone</filename>
                             command to get the project's Metadata files.
-                            </para></listitem>
+                            <note>
+                                Do not specify your BitBake Commander project
+                                location as your Eclipse workspace.
+                                Doing so causes an error indicating that the
+                                current project overlaps the location of
+                                another project.
+                                This error occurs even if no such project exits.
+                            </note></para></listitem>
                         <listitem><para>Select <filename>Finish</filename> to
                             create the project.</para></listitem>
                     </orderedlist>
@@ -1639,7 +1645,7 @@
             <filename>meta/conf/bitbake.conf</filename> configuration file in the
             <link linkend='source-directory'>Source Directory</link>:
             <literallayout class='monospaced'>
-     S = ${WORKDIR}/${BP}
+     S = "${WORKDIR}/${BP}"
             </literallayout>
             You should be aware that many recipes override the <filename>S</filename> variable.
             For example, recipes that fetch their source from Git usually set
@@ -1649,7 +1655,7 @@
                 <ulink url='&YOCTO_DOCS_REF_URL;#var-BP'><filename>BP</filename></ulink>
                 represents the base recipe name, which consists of the name and version:
                 <literallayout class='monospaced'>
-     BP = ${BPN}-${PV}
+     BP = "${BPN}-${PV}"
                 </literallayout>
             </note>
         </para>
@@ -1670,7 +1676,7 @@
             the following is the work directory for the <filename>acl</filename> recipe that
             creates the <filename>acl</filename> package:
             <literallayout class='monospaced'>
-     ~/poky/build/tmp/work/i586-poky-linux/acl/2.2.51-r3/
+     poky/build/tmp/work/i586-poky-linux/acl/2.2.51-r3/
             </literallayout>
         </para>
 
@@ -1686,8 +1692,8 @@
             for the <filename>acl</filename> package that is being
             built for a MIPS-based device:
             <literallayout class='monospaced'>
-     ~/poky/build/tmp/work/mips-poky-linux/acl/2.2.51-r2
-     ~/poky/build/tmp/work/mips-poky-linux/acl/2.2.51-r2/acl-2.2.51
+     poky/build/tmp/work/mips-poky-linux/acl/2.2.51-r2
+     poky/build/tmp/work/mips-poky-linux/acl/2.2.51-r2/acl-2.2.51
             </literallayout>
         </para>
 
@@ -1698,6 +1704,7 @@
             <ulink url='&YOCTO_DOCS_REF_URL;#var-TMPDIR'><filename>TMPDIR</filename></ulink>,
             <ulink url='&YOCTO_DOCS_REF_URL;#var-TOPDIR'><filename>TOPDIR</filename></ulink>,
             <ulink url='&YOCTO_DOCS_REF_URL;#var-PACKAGE_ARCH'><filename>PACKAGE_ARCH</filename></ulink>,
+            <ulink url='&YOCTO_DOCS_REF_URL;#var-MULTIMACH_TARGET_SYS'><filename>MULTIMACH_TARGET_SYS</filename></ulink>,
             <ulink url='&YOCTO_DOCS_REF_URL;#var-TARGET_OS'><filename>TARGET_OS</filename></ulink>,
             <ulink url='&YOCTO_DOCS_REF_URL;#var-PN'><filename>PN</filename></ulink>,
             <ulink url='&YOCTO_DOCS_REF_URL;#var-PV'><filename>PV</filename></ulink>,

@@ -39,15 +39,18 @@ PACKAGES =+ "util-linux-agetty util-linux-fdisk util-linux-cfdisk util-linux-sfd
              util-linux-mkfs.cramfs util-linux-fsck.cramfs \
              util-linux-partx ${PN}-bash-completion"
 
-EXTRA_OECONF = "--libdir=${base_libdir} --disable-use-tty-group \
-                --disable-makeinstall-chown --enable-elvtune --enable-init \
-                --enable-kill --enable-last --enable-mesg --enable-partx \
-                --enable-raw --enable-rdev --enable-reset --disable-login \
-                --disable-vipw --disable-newgrp --disable-chfn-chsh \
-                --enable-write --enable-arch --enable-mount --with-fsprobe=builtin \
-                --enable-libuuid --enable-libblkid --enable-fsck --without-udev \
-		usrsbin_execdir='${sbindir}' \
+SHARED_EXTRA_OECONF = "--disable-use-tty-group \
+                       --disable-makeinstall-chown --enable-elvtune \
+                       --enable-kill --enable-last --enable-mesg --enable-partx \
+                       --enable-raw --enable-reset --disable-login \
+                       --disable-vipw --disable-newgrp --disable-chfn-chsh \
+                       --enable-write --enable-mount \
+                       --enable-libuuid --enable-libblkid --enable-fsck --without-udev \
+                       usrsbin_execdir='${sbindir}' \
 "
+
+EXTRA_OECONF = "${SHARED_EXTRA_OECONF} --libdir=${base_libdir}"
+
 PACKAGECONFIG_class-target ?= "${@base_contains('DISTRO_FEATURES', 'pam', 'pam', '', d)} \
                                 ${@base_contains('DISTRO_FEATURES', 'systemd', 'systemd', '', d)} "
 PACKAGECONFIG[pam] = "--enable-su --enable-runuser,--disable-su --disable-runuser, libpam,"
@@ -74,11 +77,11 @@ FILES_util-linux-reset = "${base_bindir}/reset"
 FILES_util-linux-partx = "${sbindir}/partx"
 
 FILES_util-linux-libblkid = "${base_libdir}/libblkid.so.*"
-FILES_util-linux-libblkid-dev = "${base_libdir}/libblkid.so ${base_libdir}/libblkid.la ${includedir}/blkid ${libdir}/pkgconfig/blkid.pc"
+FILES_util-linux-libblkid-dev = "${libdir}/libblkid.so ${libdir}/libblkid.la ${includedir}/blkid ${libdir}/pkgconfig/blkid.pc"
 FILES_util-linux-libmount = "${base_libdir}/libmount.so.*"
-FILES_util-linux-libmount-dev = "${base_libdir}/libmount.so ${base_libdir}/libmount.la ${includedir}/libmount ${libdir}/pkgconfig/mount.pc"
+FILES_util-linux-libmount-dev = "${libdir}/libmount.so ${libdir}/libmount.la ${includedir}/libmount ${libdir}/pkgconfig/mount.pc"
 FILES_util-linux-libuuid = "${base_libdir}/libuuid.so.*"
-FILES_util-linux-libuuid-dev = "${base_libdir}/libuuid.so ${base_libdir}/libuuid.la ${includedir}/uuid ${libdir}/pkgconfig/uuid.pc"
+FILES_util-linux-libuuid-dev = "${libdir}/libuuid.so ${libdir}/libuuid.la ${includedir}/uuid ${libdir}/pkgconfig/uuid.pc"
 FILES_util-linux-lscpu = "${bindir}/lscpu"
 
 FILES_util-linux-fsck = "${base_sbindir}/fsck*"
@@ -200,6 +203,9 @@ ALTERNATIVE_LINK_NAME[mount] = "${base_bindir}/mount"
 
 ALTERNATIVE_util-linux-umount = "umount"
 ALTERNATIVE_LINK_NAME[umount] = "${base_bindir}/umount"
+
+ALTERNATIVE_util-linux-readprofile = "readprofile"
+ALTERNATIVE_LINK_NAME[readprofile] = "${base_sbindir}/readprofile"
 
 ALTERNATIVE_util-linux-losetup = "losetup"
 ALTERNATIVE_LINK_NAME[losetup] = "${base_sbindir}/losetup"

@@ -15,12 +15,31 @@ STAGING_BINDIR_TOOLCHAIN = "${STAGING_DIR_NATIVE}${bindir_native}/${SDK_ARCH}${S
 # Update BASE_PACKAGE_ARCH and PACKAGE_ARCHS
 #
 PACKAGE_ARCH = "${SDK_ARCH}-${SDKPKGSUFFIX}"
+CANADIANEXTRAOS = ""
 python () {
     archs = d.getVar('PACKAGE_ARCHS', True).split()
     sdkarchs = []
     for arch in archs:
         sdkarchs.append(arch + '-${SDKPKGSUFFIX}')
     d.setVar('PACKAGE_ARCHS', " ".join(sdkarchs))
+
+    # PowerPC can build "linux" and "linux-gnuspe"
+    tarch = d.getVar("TARGET_ARCH", True)
+    if tarch == "powerpc":
+        tos = d.getVar("TARGET_OS", True)
+        if (tos != "linux" and tos != "linux-gnuspe" and tos != "linux-uclibc" and tos != "linux-uclibcspe"):
+            bb.fatal("Building cross-candian powerpc for an unknown TARGET_SYS (%s), please update cross-canadian.bbclass" % d.getVar("TARGET_SYS", True))
+        # This is a bit ugly. We need to zero LIBC/ABI extension which will change TARGET_OS
+        # however we need the old value in some variables. We expand those here first.
+        d.setVar("DEPENDS", d.getVar("DEPENDS", True))
+        d.setVar("STAGING_BINDIR_TOOLCHAIN", d.getVar("STAGING_BINDIR_TOOLCHAIN", True))
+        for prefix in ["AR", "AS", "DLLTOOL", "CC", "CXX", "GCC", "LD", "LIPO", "NM", "OBJDUMP", "RANLIB", "STRIP", "WINDRES"]:
+            n = prefix + "_FOR_TARGET"
+            d.setVar(n, d.getVar(n, True))
+
+        d.setVar("LIBCEXTENSION", "")
+        d.setVar("ABIEXTENSION", "")
+        d.setVar("CANADIANEXTRAOS", "linux-gnuspe")
 }
 MULTIMACH_TARGET_SYS = "${PACKAGE_ARCH}${HOST_VENDOR}-${HOST_OS}"
 
@@ -95,3 +114,21 @@ USE_NLS = "${SDKUSE_NLS}"
 # We have to us TARGET_ARCH but we care about the absolute value
 # and not any particular tune that is enabled.
 TARGET_ARCH[vardepsexclude] = "TUNE_ARCH"
+
+# If MLPREFIX is set by multilib code, shlibs
+# points to the wrong place so force it
+SHLIBSDIRS = "${PKGDATA_DIR}/nativesdk-shlibs"
+SHLIBSWORKDIR = "${PKGDATA_DIR}/nativesdk-shlibs"
+
+cross_canadian_bindirlinks () {
+	for i in ${CANADIANEXTRAOS}
+	do
+		d=${D}${bindir}/../${TARGET_ARCH}${TARGET_VENDOR}-$i
+		install -d $d
+		for j in `ls ${D}${bindir}`
+		do
+			p=${TARGET_ARCH}${TARGET_VENDOR}-$i-`echo $j | sed -e s,${TARGET_PREFIX},,`
+			ln -s ../${TARGET_SYS}/$j $d/$p
+		done
+       done
+}
